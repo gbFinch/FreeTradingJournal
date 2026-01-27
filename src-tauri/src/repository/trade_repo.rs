@@ -231,3 +231,497 @@ impl TradeRepository {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Datelike;
+    use crate::repository::InstrumentRepository;
+    use crate::test_utils::{create_test_db, setup_test_user_and_account, create_test_trade_input};
+
+    #[tokio::test]
+    async fn test_insert_trade() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let instrument = InstrumentRepository::get_or_create(&pool, "AAPL")
+            .await
+            .expect("Failed to create instrument");
+
+        let input = create_test_trade_input(&account_id, "AAPL");
+
+        let trade = TradeRepository::insert(&pool, &user_id, &instrument.id, &input)
+            .await
+            .expect("Failed to insert trade");
+
+        assert!(!trade.id.is_empty());
+        assert_eq!(trade.user_id, user_id);
+        assert_eq!(trade.account_id, account_id);
+        assert_eq!(trade.symbol, "AAPL");
+        assert_eq!(trade.direction, Direction::Long);
+        assert_eq!(trade.entry_price, 150.0);
+        assert_eq!(trade.exit_price, Some(155.0));
+        assert_eq!(trade.quantity, Some(100.0));
+        assert_eq!(trade.fees, 10.0);
+        assert_eq!(trade.status, Status::Closed);
+    }
+
+    #[tokio::test]
+    async fn test_insert_trade_defaults() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let instrument = InstrumentRepository::get_or_create(&pool, "MSFT")
+            .await
+            .expect("Failed to create instrument");
+
+        let input = CreateTradeInput {
+            account_id: account_id.clone(),
+            symbol: "MSFT".to_string(),
+            trade_number: None,
+            trade_date: NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
+            direction: Direction::Short,
+            quantity: None,
+            entry_price: 400.0,
+            exit_price: None,
+            stop_loss_price: None,
+            entry_time: None,
+            exit_time: None,
+            fees: None,
+            strategy: None,
+            notes: None,
+            status: None, // Should default to Closed
+        };
+
+        let trade = TradeRepository::insert(&pool, &user_id, &instrument.id, &input)
+            .await
+            .expect("Failed to insert trade");
+
+        assert_eq!(trade.fees, 0.0); // Default
+        assert_eq!(trade.status, Status::Closed); // Default
+        assert!(trade.quantity.is_none());
+        assert!(trade.exit_price.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_get_by_id() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let instrument = InstrumentRepository::get_or_create(&pool, "GOOGL")
+            .await
+            .unwrap();
+
+        let input = create_test_trade_input(&account_id, "GOOGL");
+        let inserted = TradeRepository::insert(&pool, &user_id, &instrument.id, &input)
+            .await
+            .unwrap();
+
+        let fetched = TradeRepository::get_by_id(&pool, &inserted.id)
+            .await
+            .expect("Query failed")
+            .expect("Trade not found");
+
+        assert_eq!(inserted.id, fetched.id);
+        assert_eq!(fetched.symbol, "GOOGL");
+    }
+
+    #[tokio::test]
+    async fn test_get_by_id_not_found() {
+        let pool = create_test_db().await;
+
+        let result = TradeRepository::get_by_id(&pool, "nonexistent-id")
+            .await
+            .expect("Query failed");
+
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_get_trades_all() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let instrument = InstrumentRepository::get_or_create(&pool, "TSLA")
+            .await
+            .unwrap();
+
+        // Insert multiple trades
+        for i in 1..=3 {
+            let mut input = create_test_trade_input(&account_id, "TSLA");
+            input.trade_number = Some(i);
+            input.trade_date = NaiveDate::from_ymd_opt(2024, 1, i as u32).unwrap();
+            TradeRepository::insert(&pool, &user_id, &instrument.id, &input)
+                .await
+                .unwrap();
+        }
+
+        let trades = TradeRepository::get_trades(&pool, &user_id, None, None, None, None)
+            .await
+            .expect("Failed to get trades");
+
+        assert_eq!(trades.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn test_get_trades_filter_by_account() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        // Create second account
+        sqlx::query("INSERT INTO accounts (id, user_id, name, base_currency) VALUES (?, ?, ?, ?)")
+            .bind("account2")
+            .bind(&user_id)
+            .bind("Account 2")
+            .bind("USD")
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        let instrument = InstrumentRepository::get_or_create(&pool, "AAPL")
+            .await
+            .unwrap();
+
+        // Insert trades in both accounts
+        let mut input1 = create_test_trade_input(&account_id, "AAPL");
+        input1.trade_number = Some(1);
+        TradeRepository::insert(&pool, &user_id, &instrument.id, &input1)
+            .await
+            .unwrap();
+
+        let mut input2 = create_test_trade_input("account2", "AAPL");
+        input2.trade_number = Some(2);
+        TradeRepository::insert(&pool, &user_id, &instrument.id, &input2)
+            .await
+            .unwrap();
+
+        // Filter by first account
+        let trades = TradeRepository::get_trades(&pool, &user_id, Some(&account_id), None, None, None)
+            .await
+            .expect("Failed to get trades");
+
+        assert_eq!(trades.len(), 1);
+        assert_eq!(trades[0].account_id, account_id);
+    }
+
+    #[tokio::test]
+    async fn test_get_trades_filter_by_date_range() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let instrument = InstrumentRepository::get_or_create(&pool, "NVDA")
+            .await
+            .unwrap();
+
+        // Insert trades on different dates
+        for day in [5, 10, 15, 20, 25] {
+            let mut input = create_test_trade_input(&account_id, "NVDA");
+            input.trade_date = NaiveDate::from_ymd_opt(2024, 1, day).unwrap();
+            input.trade_number = Some(day as i32);
+            TradeRepository::insert(&pool, &user_id, &instrument.id, &input)
+                .await
+                .unwrap();
+        }
+
+        // Filter by date range (10-20)
+        let start = NaiveDate::from_ymd_opt(2024, 1, 10).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 1, 20).unwrap();
+
+        let trades = TradeRepository::get_trades(&pool, &user_id, None, Some(start), Some(end), None)
+            .await
+            .expect("Failed to get trades");
+
+        assert_eq!(trades.len(), 3); // Days 10, 15, 20
+    }
+
+    #[tokio::test]
+    async fn test_get_trades_filter_by_status() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let instrument = InstrumentRepository::get_or_create(&pool, "AMD")
+            .await
+            .unwrap();
+
+        // Insert closed trade
+        let mut closed_input = create_test_trade_input(&account_id, "AMD");
+        closed_input.status = Some(Status::Closed);
+        TradeRepository::insert(&pool, &user_id, &instrument.id, &closed_input)
+            .await
+            .unwrap();
+
+        // Insert open trade
+        let mut open_input = create_test_trade_input(&account_id, "AMD");
+        open_input.status = Some(Status::Open);
+        open_input.exit_price = None;
+        TradeRepository::insert(&pool, &user_id, &instrument.id, &open_input)
+            .await
+            .unwrap();
+
+        // Filter by closed status
+        let closed_trades = TradeRepository::get_trades(&pool, &user_id, None, None, None, Some(Status::Closed))
+            .await
+            .expect("Failed to get trades");
+
+        assert_eq!(closed_trades.len(), 1);
+        assert_eq!(closed_trades[0].status, Status::Closed);
+
+        // Filter by open status
+        let open_trades = TradeRepository::get_trades(&pool, &user_id, None, None, None, Some(Status::Open))
+            .await
+            .expect("Failed to get trades");
+
+        assert_eq!(open_trades.len(), 1);
+        assert_eq!(open_trades[0].status, Status::Open);
+    }
+
+    #[tokio::test]
+    async fn test_get_trades_ordering() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let instrument = InstrumentRepository::get_or_create(&pool, "META")
+            .await
+            .unwrap();
+
+        // Insert in non-chronological order
+        for day in [15, 5, 25, 10, 20] {
+            let mut input = create_test_trade_input(&account_id, "META");
+            input.trade_date = NaiveDate::from_ymd_opt(2024, 1, day).unwrap();
+            input.trade_number = Some(day as i32);
+            TradeRepository::insert(&pool, &user_id, &instrument.id, &input)
+                .await
+                .unwrap();
+        }
+
+        let trades = TradeRepository::get_trades(&pool, &user_id, None, None, None, None)
+            .await
+            .expect("Failed to get trades");
+
+        // Should be ordered by date DESC
+        assert_eq!(trades[0].trade_date.day(), 25);
+        assert_eq!(trades[1].trade_date.day(), 20);
+        assert_eq!(trades[2].trade_date.day(), 15);
+        assert_eq!(trades[3].trade_date.day(), 10);
+        assert_eq!(trades[4].trade_date.day(), 5);
+    }
+
+    #[tokio::test]
+    async fn test_update_trade() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let instrument = InstrumentRepository::get_or_create(&pool, "AAPL")
+            .await
+            .unwrap();
+
+        let input = create_test_trade_input(&account_id, "AAPL");
+        let trade = TradeRepository::insert(&pool, &user_id, &instrument.id, &input)
+            .await
+            .unwrap();
+
+        // Update trade
+        let update_input = UpdateTradeInput {
+            account_id: None,
+            symbol: None,
+            trade_number: None,
+            trade_date: None,
+            direction: None,
+            quantity: Some(200.0), // Changed
+            entry_price: None,
+            exit_price: Some(160.0), // Changed
+            stop_loss_price: None,
+            entry_time: None,
+            exit_time: None,
+            fees: Some(15.0), // Changed
+            strategy: Some("swing".to_string()), // Changed
+            notes: None,
+            status: None,
+        };
+
+        let updated = TradeRepository::update(&pool, &trade.id, None, &update_input)
+            .await
+            .expect("Failed to update trade");
+
+        assert_eq!(updated.quantity, Some(200.0));
+        assert_eq!(updated.exit_price, Some(160.0));
+        assert_eq!(updated.fees, 15.0);
+        assert_eq!(updated.strategy, Some("swing".to_string()));
+        // Unchanged fields should remain the same
+        assert_eq!(updated.entry_price, 150.0);
+        assert_eq!(updated.direction, Direction::Long);
+    }
+
+    #[tokio::test]
+    async fn test_update_trade_change_instrument() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let instrument1 = InstrumentRepository::get_or_create(&pool, "AAPL")
+            .await
+            .unwrap();
+        let instrument2 = InstrumentRepository::get_or_create(&pool, "GOOGL")
+            .await
+            .unwrap();
+
+        let input = create_test_trade_input(&account_id, "AAPL");
+        let trade = TradeRepository::insert(&pool, &user_id, &instrument1.id, &input)
+            .await
+            .unwrap();
+
+        let update_input = UpdateTradeInput {
+            account_id: None,
+            symbol: Some("GOOGL".to_string()),
+            trade_number: None,
+            trade_date: None,
+            direction: None,
+            quantity: None,
+            entry_price: None,
+            exit_price: None,
+            stop_loss_price: None,
+            entry_time: None,
+            exit_time: None,
+            fees: None,
+            strategy: None,
+            notes: None,
+            status: None,
+        };
+
+        let updated = TradeRepository::update(&pool, &trade.id, Some(&instrument2.id), &update_input)
+            .await
+            .expect("Failed to update trade");
+
+        assert_eq!(updated.instrument_id, instrument2.id);
+        assert_eq!(updated.symbol, "GOOGL");
+    }
+
+    #[tokio::test]
+    async fn test_delete_trade() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let instrument = InstrumentRepository::get_or_create(&pool, "AAPL")
+            .await
+            .unwrap();
+
+        let input = create_test_trade_input(&account_id, "AAPL");
+        let trade = TradeRepository::insert(&pool, &user_id, &instrument.id, &input)
+            .await
+            .unwrap();
+
+        // Verify trade exists
+        assert!(TradeRepository::get_by_id(&pool, &trade.id).await.unwrap().is_some());
+
+        // Delete trade
+        TradeRepository::delete(&pool, &trade.id)
+            .await
+            .expect("Failed to delete trade");
+
+        // Verify trade is deleted
+        assert!(TradeRepository::get_by_id(&pool, &trade.id).await.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn test_get_trades_user_isolation() {
+        let pool = create_test_db().await;
+
+        // Create two users with accounts
+        sqlx::query("INSERT INTO users (id, email) VALUES (?, ?)")
+            .bind("user1")
+            .bind("user1@example.com")
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        sqlx::query("INSERT INTO users (id, email) VALUES (?, ?)")
+            .bind("user2")
+            .bind("user2@example.com")
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        sqlx::query("INSERT INTO accounts (id, user_id, name, base_currency) VALUES (?, ?, ?, ?)")
+            .bind("acc1")
+            .bind("user1")
+            .bind("User1 Account")
+            .bind("USD")
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        sqlx::query("INSERT INTO accounts (id, user_id, name, base_currency) VALUES (?, ?, ?, ?)")
+            .bind("acc2")
+            .bind("user2")
+            .bind("User2 Account")
+            .bind("USD")
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        let instrument = InstrumentRepository::get_or_create(&pool, "AAPL")
+            .await
+            .unwrap();
+
+        // Insert trades for each user
+        let mut input1 = create_test_trade_input("acc1", "AAPL");
+        input1.trade_number = Some(1);
+        TradeRepository::insert(&pool, "user1", &instrument.id, &input1)
+            .await
+            .unwrap();
+
+        let mut input2 = create_test_trade_input("acc2", "AAPL");
+        input2.trade_number = Some(2);
+        TradeRepository::insert(&pool, "user2", &instrument.id, &input2)
+            .await
+            .unwrap();
+
+        // Verify user isolation
+        let user1_trades = TradeRepository::get_trades(&pool, "user1", None, None, None, None)
+            .await
+            .unwrap();
+        let user2_trades = TradeRepository::get_trades(&pool, "user2", None, None, None, None)
+            .await
+            .unwrap();
+
+        assert_eq!(user1_trades.len(), 1);
+        assert_eq!(user2_trades.len(), 1);
+        assert_eq!(user1_trades[0].trade_number, Some(1));
+        assert_eq!(user2_trades[0].trade_number, Some(2));
+    }
+
+    #[tokio::test]
+    async fn test_short_trade() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let instrument = InstrumentRepository::get_or_create(&pool, "TSLA")
+            .await
+            .unwrap();
+
+        let input = CreateTradeInput {
+            account_id: account_id.clone(),
+            symbol: "TSLA".to_string(),
+            trade_number: None,
+            trade_date: NaiveDate::from_ymd_opt(2024, 2, 1).unwrap(),
+            direction: Direction::Short,
+            quantity: Some(50.0),
+            entry_price: 200.0,
+            exit_price: Some(180.0),
+            stop_loss_price: Some(210.0),
+            entry_time: None,
+            exit_time: None,
+            fees: Some(5.0),
+            strategy: None,
+            notes: None,
+            status: Some(Status::Closed),
+        };
+
+        let trade = TradeRepository::insert(&pool, &user_id, &instrument.id, &input)
+            .await
+            .expect("Failed to insert short trade");
+
+        assert_eq!(trade.direction, Direction::Short);
+        assert_eq!(trade.entry_price, 200.0);
+        assert_eq!(trade.exit_price, Some(180.0));
+    }
+}

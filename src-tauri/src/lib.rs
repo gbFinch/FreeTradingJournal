@@ -4,6 +4,9 @@ mod models;
 mod repository;
 mod services;
 
+#[cfg(test)]
+mod test_utils;
+
 use sqlx::sqlite::SqlitePool;
 use tauri::Manager;
 

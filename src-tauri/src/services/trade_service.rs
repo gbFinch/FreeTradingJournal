@@ -156,3 +156,572 @@ impl TradeService {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::Direction;
+
+    fn valid_input() -> CreateTradeInput {
+        CreateTradeInput {
+            account_id: "acc1".to_string(),
+            symbol: "AAPL".to_string(),
+            trade_number: Some(1),
+            trade_date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            direction: Direction::Long,
+            quantity: Some(100.0),
+            entry_price: 150.0,
+            exit_price: Some(155.0),
+            stop_loss_price: Some(145.0),
+            entry_time: None,
+            exit_time: None,
+            fees: Some(10.0),
+            strategy: Some("momentum".to_string()),
+            notes: None,
+            status: Some(Status::Closed),
+        }
+    }
+
+    #[test]
+    fn test_validate_input_valid() {
+        let input = valid_input();
+        assert!(TradeService::validate_input(&input).is_ok());
+    }
+
+    #[test]
+    fn test_validate_input_zero_entry_price() {
+        let mut input = valid_input();
+        input.entry_price = 0.0;
+        let result = TradeService::validate_input(&input);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Entry price must be greater than 0");
+    }
+
+    #[test]
+    fn test_validate_input_negative_entry_price() {
+        let mut input = valid_input();
+        input.entry_price = -10.0;
+        let result = TradeService::validate_input(&input);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Entry price must be greater than 0");
+    }
+
+    #[test]
+    fn test_validate_input_zero_quantity() {
+        let mut input = valid_input();
+        input.quantity = Some(0.0);
+        let result = TradeService::validate_input(&input);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Quantity must be greater than 0");
+    }
+
+    #[test]
+    fn test_validate_input_negative_quantity() {
+        let mut input = valid_input();
+        input.quantity = Some(-50.0);
+        let result = TradeService::validate_input(&input);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Quantity must be greater than 0");
+    }
+
+    #[test]
+    fn test_validate_input_none_quantity_ok() {
+        let mut input = valid_input();
+        input.quantity = None;
+        assert!(TradeService::validate_input(&input).is_ok());
+    }
+
+    #[test]
+    fn test_validate_input_zero_exit_price() {
+        let mut input = valid_input();
+        input.exit_price = Some(0.0);
+        let result = TradeService::validate_input(&input);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Exit price must be greater than 0");
+    }
+
+    #[test]
+    fn test_validate_input_negative_exit_price() {
+        let mut input = valid_input();
+        input.exit_price = Some(-100.0);
+        let result = TradeService::validate_input(&input);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Exit price must be greater than 0");
+    }
+
+    #[test]
+    fn test_validate_input_none_exit_price_ok() {
+        let mut input = valid_input();
+        input.exit_price = None;
+        assert!(TradeService::validate_input(&input).is_ok());
+    }
+
+    #[test]
+    fn test_validate_input_zero_stop_loss() {
+        let mut input = valid_input();
+        input.stop_loss_price = Some(0.0);
+        let result = TradeService::validate_input(&input);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Stop loss price must be greater than 0");
+    }
+
+    #[test]
+    fn test_validate_input_negative_stop_loss() {
+        let mut input = valid_input();
+        input.stop_loss_price = Some(-5.0);
+        let result = TradeService::validate_input(&input);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Stop loss price must be greater than 0");
+    }
+
+    #[test]
+    fn test_validate_input_none_stop_loss_ok() {
+        let mut input = valid_input();
+        input.stop_loss_price = None;
+        assert!(TradeService::validate_input(&input).is_ok());
+    }
+
+    #[test]
+    fn test_validate_input_negative_fees() {
+        let mut input = valid_input();
+        input.fees = Some(-1.0);
+        let result = TradeService::validate_input(&input);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Fees cannot be negative");
+    }
+
+    #[test]
+    fn test_validate_input_zero_fees_ok() {
+        let mut input = valid_input();
+        input.fees = Some(0.0);
+        assert!(TradeService::validate_input(&input).is_ok());
+    }
+
+    #[test]
+    fn test_validate_input_none_fees_ok() {
+        let mut input = valid_input();
+        input.fees = None;
+        assert!(TradeService::validate_input(&input).is_ok());
+    }
+
+    #[test]
+    fn test_validate_input_minimal_valid() {
+        let input = CreateTradeInput {
+            account_id: "acc1".to_string(),
+            symbol: "TSLA".to_string(),
+            trade_number: None,
+            trade_date: NaiveDate::from_ymd_opt(2024, 6, 1).unwrap(),
+            direction: Direction::Short,
+            quantity: None,
+            entry_price: 200.0,
+            exit_price: None,
+            stop_loss_price: None,
+            entry_time: None,
+            exit_time: None,
+            fees: None,
+            strategy: None,
+            notes: None,
+            status: None,
+        };
+        assert!(TradeService::validate_input(&input).is_ok());
+    }
+}
+
+#[cfg(test)]
+mod integration_tests {
+    use super::*;
+    use crate::models::{Direction, TradeResult};
+    use crate::test_utils::{
+        create_test_db, setup_test_user_and_account, create_test_trade_input,
+        create_losing_long_trade, create_open_trade,
+    };
+
+    #[tokio::test]
+    async fn test_create_trade_full_flow() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = create_test_trade_input(&account_id, "AAPL");
+
+        let trade = TradeService::create_trade(&pool, &user_id, input)
+            .await
+            .expect("Failed to create trade");
+
+        assert!(!trade.trade.id.is_empty());
+        assert_eq!(trade.trade.symbol, "AAPL");
+        assert_eq!(trade.trade.entry_price, 150.0);
+        assert_eq!(trade.trade.exit_price, Some(155.0));
+
+        // Verify derived fields are calculated
+        // Long: (155 - 150) * 100 = 500 gross
+        assert!(trade.gross_pnl.is_some());
+        assert!((trade.gross_pnl.unwrap() - 500.0).abs() < 0.01);
+
+        // Net: 500 - 10 = 490
+        assert!(trade.net_pnl.is_some());
+        assert!((trade.net_pnl.unwrap() - 490.0).abs() < 0.01);
+
+        // Result should be Win
+        assert_eq!(trade.result, Some(TradeResult::Win));
+    }
+
+    #[tokio::test]
+    async fn test_create_trade_with_derived_r_multiple() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = CreateTradeInput {
+            account_id: account_id.clone(),
+            symbol: "MSFT".to_string(),
+            trade_number: None,
+            trade_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            direction: Direction::Long,
+            quantity: Some(100.0),
+            entry_price: 100.0,
+            exit_price: Some(110.0),  // +10 per share
+            stop_loss_price: Some(95.0), // -5 risk per share
+            entry_time: None,
+            exit_time: None,
+            fees: Some(0.0),
+            strategy: None,
+            notes: None,
+            status: Some(Status::Closed),
+        };
+
+        let trade = TradeService::create_trade(&pool, &user_id, input)
+            .await
+            .expect("Failed to create trade");
+
+        // PnL per share: 110 - 100 = 10
+        assert_eq!(trade.pnl_per_share, Some(10.0));
+
+        // Risk per share: |100 - 95| = 5
+        assert_eq!(trade.risk_per_share, Some(5.0));
+
+        // R-multiple: 10 / 5 = 2.0
+        assert!(trade.r_multiple.is_some());
+        assert!((trade.r_multiple.unwrap() - 2.0).abs() < 0.01);
+    }
+
+    #[tokio::test]
+    async fn test_create_short_trade_winning() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = CreateTradeInput {
+            account_id: account_id.clone(),
+            symbol: "TSLA".to_string(),
+            trade_number: None,
+            trade_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            direction: Direction::Short,
+            quantity: Some(50.0),
+            entry_price: 200.0,
+            exit_price: Some(180.0), // Short wins when price goes down
+            stop_loss_price: None,
+            entry_time: None,
+            exit_time: None,
+            fees: Some(0.0),
+            strategy: None,
+            notes: None,
+            status: Some(Status::Closed),
+        };
+
+        let trade = TradeService::create_trade(&pool, &user_id, input)
+            .await
+            .expect("Failed to create trade");
+
+        // Short PnL: (200 - 180) * 50 = 1000
+        assert!((trade.gross_pnl.unwrap() - 1000.0).abs() < 0.01);
+        assert_eq!(trade.result, Some(TradeResult::Win));
+    }
+
+    #[tokio::test]
+    async fn test_create_losing_trade() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = create_losing_long_trade(
+            &account_id,
+            "NVDA",
+            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            100.0,  // entry
+            90.0,   // exit (loss)
+            100.0,  // qty
+        );
+
+        let trade = TradeService::create_trade(&pool, &user_id, input)
+            .await
+            .expect("Failed to create trade");
+
+        // Long loss: (90 - 100) * 100 = -1000
+        assert!((trade.gross_pnl.unwrap() - (-1000.0)).abs() < 0.01);
+        assert_eq!(trade.result, Some(TradeResult::Loss));
+    }
+
+    #[tokio::test]
+    async fn test_create_breakeven_trade() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = CreateTradeInput {
+            account_id: account_id.clone(),
+            symbol: "META".to_string(),
+            trade_number: None,
+            trade_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            direction: Direction::Long,
+            quantity: Some(100.0),
+            entry_price: 100.0,
+            exit_price: Some(100.0), // Same as entry
+            stop_loss_price: None,
+            entry_time: None,
+            exit_time: None,
+            fees: Some(0.0),
+            strategy: None,
+            notes: None,
+            status: Some(Status::Closed),
+        };
+
+        let trade = TradeService::create_trade(&pool, &user_id, input)
+            .await
+            .expect("Failed to create trade");
+
+        assert_eq!(trade.gross_pnl, Some(0.0));
+        assert_eq!(trade.net_pnl, Some(0.0));
+        assert_eq!(trade.result, Some(TradeResult::Breakeven));
+    }
+
+    #[tokio::test]
+    async fn test_get_trade() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = create_test_trade_input(&account_id, "AAPL");
+        let created = TradeService::create_trade(&pool, &user_id, input)
+            .await
+            .expect("Failed to create trade");
+
+        let fetched = TradeService::get_trade(&pool, &created.trade.id)
+            .await
+            .expect("Failed to get trade")
+            .expect("Trade not found");
+
+        assert_eq!(created.trade.id, fetched.trade.id);
+        assert_eq!(fetched.trade.symbol, "AAPL");
+        // Derived fields should be calculated
+        assert!(fetched.gross_pnl.is_some());
+        assert!(fetched.net_pnl.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_get_trades_excludes_open() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        // Create closed trade
+        let closed_input = create_test_trade_input(&account_id, "AAPL");
+        TradeService::create_trade(&pool, &user_id, closed_input)
+            .await
+            .unwrap();
+
+        // Create open trade
+        let open_input = create_open_trade(
+            &account_id,
+            "MSFT",
+            NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
+            100.0,
+            50.0,
+        );
+        TradeService::create_trade(&pool, &user_id, open_input)
+            .await
+            .unwrap();
+
+        // get_trades should only return closed trades
+        let trades = TradeService::get_trades(&pool, &user_id, None, None, None)
+            .await
+            .expect("Failed to get trades");
+
+        assert_eq!(trades.len(), 1);
+        assert_eq!(trades[0].trade.symbol, "AAPL");
+    }
+
+    #[tokio::test]
+    async fn test_get_all_trades_includes_open() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        // Create closed trade
+        let closed_input = create_test_trade_input(&account_id, "AAPL");
+        TradeService::create_trade(&pool, &user_id, closed_input)
+            .await
+            .unwrap();
+
+        // Create open trade
+        let open_input = create_open_trade(
+            &account_id,
+            "MSFT",
+            NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
+            100.0,
+            50.0,
+        );
+        TradeService::create_trade(&pool, &user_id, open_input)
+            .await
+            .unwrap();
+
+        // get_all_trades should return both
+        let trades = TradeService::get_all_trades(&pool, &user_id, None, None, None)
+            .await
+            .expect("Failed to get trades");
+
+        assert_eq!(trades.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_update_trade() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = create_test_trade_input(&account_id, "AAPL");
+        let trade = TradeService::create_trade(&pool, &user_id, input)
+            .await
+            .expect("Failed to create trade");
+
+        let update = UpdateTradeInput {
+            account_id: None,
+            symbol: None,
+            trade_number: None,
+            trade_date: None,
+            direction: None,
+            quantity: None,
+            entry_price: None,
+            exit_price: Some(160.0), // Changed from 155.0
+            stop_loss_price: None,
+            entry_time: None,
+            exit_time: None,
+            fees: None,
+            strategy: None,
+            notes: Some("Updated notes".to_string()),
+            status: None,
+        };
+
+        let updated = TradeService::update_trade(&pool, &trade.trade.id, update)
+            .await
+            .expect("Failed to update trade");
+
+        assert_eq!(updated.trade.exit_price, Some(160.0));
+        assert_eq!(updated.trade.notes, Some("Updated notes".to_string()));
+
+        // Derived fields should be recalculated
+        // Long: (160 - 150) * 100 = 1000 gross
+        assert!((updated.gross_pnl.unwrap() - 1000.0).abs() < 0.01);
+    }
+
+    #[tokio::test]
+    async fn test_update_trade_change_symbol() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = create_test_trade_input(&account_id, "AAPL");
+        let trade = TradeService::create_trade(&pool, &user_id, input)
+            .await
+            .expect("Failed to create trade");
+
+        let update = UpdateTradeInput {
+            account_id: None,
+            symbol: Some("GOOGL".to_string()),
+            trade_number: None,
+            trade_date: None,
+            direction: None,
+            quantity: None,
+            entry_price: None,
+            exit_price: None,
+            stop_loss_price: None,
+            entry_time: None,
+            exit_time: None,
+            fees: None,
+            strategy: None,
+            notes: None,
+            status: None,
+        };
+
+        let updated = TradeService::update_trade(&pool, &trade.trade.id, update)
+            .await
+            .expect("Failed to update trade");
+
+        assert_eq!(updated.trade.symbol, "GOOGL");
+    }
+
+    #[tokio::test]
+    async fn test_delete_trade() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = create_test_trade_input(&account_id, "AAPL");
+        let trade = TradeService::create_trade(&pool, &user_id, input)
+            .await
+            .expect("Failed to create trade");
+
+        // Delete trade
+        TradeService::delete_trade(&pool, &trade.trade.id)
+            .await
+            .expect("Failed to delete trade");
+
+        // Verify trade is gone
+        let result = TradeService::get_trade(&pool, &trade.trade.id)
+            .await
+            .expect("Query failed");
+
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_create_trade_validation_error() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let mut input = create_test_trade_input(&account_id, "AAPL");
+        input.entry_price = -10.0; // Invalid
+
+        let result = TradeService::create_trade(&pool, &user_id, input).await;
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Entry price must be greater than 0"));
+    }
+
+    #[tokio::test]
+    async fn test_instrument_created_uppercase() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let mut input = create_test_trade_input(&account_id, "aapl"); // lowercase
+        input.symbol = "aapl".to_string();
+
+        let trade = TradeService::create_trade(&pool, &user_id, input)
+            .await
+            .expect("Failed to create trade");
+
+        assert_eq!(trade.trade.symbol, "AAPL"); // Should be uppercase
+    }
+
+    #[tokio::test]
+    async fn test_open_trade_no_pnl() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = create_open_trade(
+            &account_id,
+            "AAPL",
+            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            150.0,
+            100.0,
+        );
+
+        let trade = TradeService::create_trade(&pool, &user_id, input)
+            .await
+            .expect("Failed to create trade");
+
+        // Open trade should have no PnL (no exit price)
+        assert!(trade.gross_pnl.is_none());
+        assert!(trade.net_pnl.is_none());
+        assert!(trade.result.is_none());
+    }
+}

@@ -85,3 +85,69 @@ pub async fn ensure_defaults(pool: &SqlitePool) -> Result<(String, String), sqlx
 
     Ok((default_user_id.to_string(), default_account_id.to_string()))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::create_test_db;
+
+    #[tokio::test]
+    async fn test_ensure_defaults_creates_user_and_account() {
+        let pool = create_test_db().await;
+
+        let (user_id, account_id) = ensure_defaults(&pool)
+            .await
+            .expect("Failed to create defaults");
+
+        assert_eq!(user_id, "default-user");
+        assert_eq!(account_id, "default-account");
+
+        // Verify user exists
+        let user_exists: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM users WHERE id = ?)"
+        )
+        .bind("default-user")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+
+        assert!(user_exists);
+
+        // Verify account exists
+        let account_exists: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM accounts WHERE id = ?)"
+        )
+        .bind("default-account")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+
+        assert!(account_exists);
+    }
+
+    #[tokio::test]
+    async fn test_ensure_defaults_idempotent() {
+        let pool = create_test_db().await;
+
+        // Call twice
+        let first = ensure_defaults(&pool).await.unwrap();
+        let second = ensure_defaults(&pool).await.unwrap();
+
+        assert_eq!(first, second);
+
+        // Verify only one user/account
+        let user_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE id = 'default-user'")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+
+        assert_eq!(user_count, 1);
+
+        let account_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM accounts WHERE id = 'default-account'")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+
+        assert_eq!(account_count, 1);
+    }
+}
