@@ -5,6 +5,7 @@ mod repository;
 mod services;
 
 use sqlx::sqlite::SqlitePool;
+use tauri::Manager;
 
 pub struct AppState {
     pub pool: SqlitePool,

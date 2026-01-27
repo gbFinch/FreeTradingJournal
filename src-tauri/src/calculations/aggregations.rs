@@ -157,8 +157,8 @@ pub fn calculate_period_metrics(trades: &[TradeWithDerived]) -> PeriodMetrics {
 /// Calculate equity curve from a list of trades
 pub fn calculate_equity_curve(trades: &[&TradeWithDerived]) -> Vec<EquityPoint> {
     let mut curve = Vec::new();
-    let mut cumulative_pnl = 0.0;
-    let mut peak = 0.0;
+    let mut cumulative_pnl: f64 = 0.0;
+    let mut peak: f64 = 0.0;
 
     for trade in trades {
         if let Some(net_pnl) = trade.net_pnl {
