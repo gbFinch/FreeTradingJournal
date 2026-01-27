@@ -62,12 +62,14 @@ export default function CalendarView() {
   const monthEnd = endOfMonth(currentDate);
 
   useEffect(() => {
+    const start = startOfMonth(currentDate);
+    const end = endOfMonth(currentDate);
     setDateRange({
-      start: format(monthStart, 'yyyy-MM-dd'),
-      end: format(monthEnd, 'yyyy-MM-dd'),
+      start: format(start, 'yyyy-MM-dd'),
+      end: format(end, 'yyyy-MM-dd'),
     });
     fetchDailyPerformance();
-  }, [currentDate, fetchDailyPerformance, setDateRange, monthStart, monthEnd]);
+  }, [currentDate, fetchDailyPerformance, setDateRange]);
 
   useEffect(() => {
     if (selectedDate) {
