@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useMetricsStore } from '@/stores';
 import MetricCard from '@/components/MetricCard';
 import EquityCurve from '@/components/EquityCurve';
+import CalendarHeatmap from '@/components/CalendarHeatmap';
 import PeriodSelector from '@/components/PeriodSelector';
 
 function formatCurrency(value: number): string {
@@ -24,7 +25,7 @@ function formatNumber(value: number | null, decimals = 2): string {
 }
 
 export default function Dashboard() {
-  const { periodMetrics, equityCurve, fetchAll, isLoading } = useMetricsStore();
+  const { periodMetrics, equityCurve, dailyPerformance, fetchAll, isLoading } = useMetricsStore();
 
   useEffect(() => {
     fetchAll();
@@ -117,13 +118,22 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Equity Curve */}
-          {equityCurve.length > 0 && (
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Equity Curve */}
+            {equityCurve.length > 0 && (
+              <div className="bg-white rounded-lg shadow p-4">
+                <h2 className="text-lg font-semibold mb-4">Equity Curve</h2>
+                <EquityCurve data={equityCurve} />
+              </div>
+            )}
+
+            {/* Calendar Heatmap */}
             <div className="bg-white rounded-lg shadow p-4">
-              <h2 className="text-lg font-semibold mb-4">Equity Curve</h2>
-              <EquityCurve data={equityCurve} />
+              <h2 className="text-lg font-semibold mb-4">Daily P&L</h2>
+              <CalendarHeatmap data={dailyPerformance} />
             </div>
-          )}
+          </div>
         </>
       )}
 
