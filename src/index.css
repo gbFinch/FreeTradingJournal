@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+/* Base styles */
+:root {
+  --color-primary: #3b82f6;
+  --color-success: #22c55e;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Utility classes for PnL colors */
+.pnl-positive {
+  @apply text-green-600;
+}
+
+.pnl-negative {
+  @apply text-red-600;
+}
+
+.pnl-neutral {
+  @apply text-gray-500;
+}

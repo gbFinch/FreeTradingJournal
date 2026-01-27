@@ -1,0 +1,37 @@
+[package]
+name = "trading-journal"
+version = "0.1.0"
+description = "A personal trading journal application"
+authors = ["you"]
+edition = "2021"
+
+[lib]
+name = "trading_journal_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite"] }
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Date/time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# UUID generation
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# For future Excel import support
+# calamine = "0.26"
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
