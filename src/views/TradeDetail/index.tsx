@@ -28,9 +28,9 @@ interface DetailRowProps {
 
 function DetailRow({ label, value, valueClass }: DetailRowProps) {
   return (
-    <div className="flex justify-between py-2 border-b border-gray-100">
-      <span className="text-gray-500">{label}</span>
-      <span className={clsx('font-medium', valueClass)}>{value}</span>
+    <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+      <span className="text-gray-500 dark:text-gray-400">{label}</span>
+      <span className={clsx('font-medium dark:text-gray-100', valueClass)}>{value}</span>
     </div>
   );
 }
@@ -62,7 +62,7 @@ export default function TradeDetail() {
   if (isLoading) {
     return (
       <div className="p-6">
-        <div className="text-center py-8 text-gray-500">Loading...</div>
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading...</div>
       </div>
     );
   }
@@ -70,11 +70,11 @@ export default function TradeDetail() {
   if (!selectedTrade) {
     return (
       <div className="p-6">
-        <div className="text-center py-8 text-gray-500">Trade not found.</div>
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">Trade not found.</div>
         <div className="text-center">
           <button
             onClick={() => navigate('/trades')}
-            className="text-blue-600 hover:underline"
+            className="text-blue-600 dark:text-blue-400 hover:underline"
           >
             Back to trades
           </button>
@@ -91,19 +91,19 @@ export default function TradeDetail() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/trades')}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
             &larr; Back
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {trade.symbol}
           </h1>
           <span
             className={clsx(
               'px-2 py-1 rounded text-sm font-medium',
               trade.direction === 'long'
-                ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800'
+                ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
             )}
           >
             {trade.direction.toUpperCase()}
@@ -112,13 +112,13 @@ export default function TradeDetail() {
         <div className="flex gap-2">
           <button
             onClick={() => setIsEditing(true)}
-            className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            className="px-4 py-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           >
             Edit
           </button>
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+            className="px-4 py-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
           >
             Delete
           </button>
@@ -128,12 +128,12 @@ export default function TradeDetail() {
       {/* Edit Form Modal */}
       {isEditing && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-auto">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="text-lg font-semibold">Edit Trade</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-auto">
+            <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
+              <h2 className="text-lg font-semibold dark:text-gray-100">Edit Trade</h2>
               <button
                 onClick={() => setIsEditing(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 &times;
               </button>
@@ -157,15 +157,15 @@ export default function TradeDetail() {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md">
-            <h2 className="text-lg font-semibold mb-4">Delete Trade?</h2>
-            <p className="text-gray-600 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md">
+            <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Delete Trade?</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
               Are you sure you want to delete this trade? This action cannot be undone.
             </p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
               >
                 Cancel
               </button>
@@ -183,8 +183,8 @@ export default function TradeDetail() {
       {/* Trade Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Input Fields */}
-        <div className="bg-white rounded-lg shadow p-4">
-          <h2 className="text-lg font-semibold mb-4">Trade Details</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Trade Details</h2>
           <DetailRow
             label="Date"
             value={format(new Date(trade.trade_date), 'MMMM d, yyyy')}
@@ -205,16 +205,16 @@ export default function TradeDetail() {
         </div>
 
         {/* Derived Fields */}
-        <div className="bg-white rounded-lg shadow p-4">
-          <h2 className="text-lg font-semibold mb-4">Performance</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Performance</h2>
           <DetailRow
             label="Result"
             value={trade.result?.toUpperCase() ?? '-'}
             valueClass={
               trade.result === 'win'
-                ? 'text-green-600'
+                ? 'text-green-600 dark:text-green-400'
                 : trade.result === 'loss'
-                ? 'text-red-600'
+                ? 'text-red-600 dark:text-red-400'
                 : ''
             }
           />
@@ -223,9 +223,9 @@ export default function TradeDetail() {
             value={formatCurrency(trade.gross_pnl)}
             valueClass={
               (trade.gross_pnl ?? 0) > 0
-                ? 'text-green-600'
+                ? 'text-green-600 dark:text-green-400'
                 : (trade.gross_pnl ?? 0) < 0
-                ? 'text-red-600'
+                ? 'text-red-600 dark:text-red-400'
                 : ''
             }
           />
@@ -234,9 +234,9 @@ export default function TradeDetail() {
             value={formatCurrency(trade.net_pnl)}
             valueClass={
               (trade.net_pnl ?? 0) > 0
-                ? 'text-green-600'
+                ? 'text-green-600 dark:text-green-400'
                 : (trade.net_pnl ?? 0) < 0
-                ? 'text-red-600'
+                ? 'text-red-600 dark:text-red-400'
                 : ''
             }
           />
@@ -254,9 +254,9 @@ export default function TradeDetail() {
 
       {/* Notes */}
       {trade.notes && (
-        <div className="mt-6 bg-white rounded-lg shadow p-4">
-          <h2 className="text-lg font-semibold mb-4">Notes</h2>
-          <p className="text-gray-600 whitespace-pre-wrap">{trade.notes}</p>
+        <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Notes</h2>
+          <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{trade.notes}</p>
         </div>
       )}
     </div>

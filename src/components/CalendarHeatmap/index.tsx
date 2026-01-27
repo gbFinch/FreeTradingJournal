@@ -87,7 +87,7 @@ export default function CalendarHeatmap({ data }: CalendarHeatmapProps) {
 
   if (data.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
         No trading data for this period
       </div>
     );
@@ -97,12 +97,12 @@ export default function CalendarHeatmap({ data }: CalendarHeatmapProps) {
     <div className="space-y-6">
       {monthsData.map(month => (
         <div key={month.key}>
-          <h3 className="text-sm font-medium text-gray-600 mb-2">{month.label}</h3>
+          <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">{month.label}</h3>
 
           {/* Day headers */}
           <div className="grid grid-cols-7 gap-1 mb-1">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-xs text-gray-400 text-center">
+              <div key={day} className="text-xs text-gray-400 dark:text-gray-500 text-center">
                 {day}
               </div>
             ))}
@@ -119,7 +119,7 @@ export default function CalendarHeatmap({ data }: CalendarHeatmapProps) {
                   ${day.isEmpty
                     ? 'bg-transparent'
                     : day.tradeCount === 0
-                      ? 'bg-gray-100 text-gray-400'
+                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
                       : `${getDayColor(day.pnl)} text-white cursor-pointer hover:opacity-80`
                   }
                 `}
@@ -132,7 +132,7 @@ export default function CalendarHeatmap({ data }: CalendarHeatmapProps) {
                   </>
                 )}
                 {!day.isEmpty && day.tradeCount === 0 && (
-                  <span className="text-gray-300">{parseISO(day.date).getDate()}</span>
+                  <span className="text-gray-300 dark:text-gray-500">{parseISO(day.date).getDate()}</span>
                 )}
               </div>
             ))}

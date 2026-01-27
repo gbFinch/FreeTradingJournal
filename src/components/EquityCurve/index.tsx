@@ -1,6 +1,7 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import type { EquityPoint } from '@/types';
+import { useThemeStore } from '@/stores';
 
 interface EquityCurveProps {
   data: EquityPoint[];
@@ -16,6 +17,9 @@ function formatCurrency(value: number): string {
 }
 
 export default function EquityCurve({ data }: EquityCurveProps) {
+  const { theme } = useThemeStore();
+  const isDark = theme === 'dark';
+
   if (data.length === 0) {
     return (
       <div className="h-64 flex items-center justify-center text-gray-400">
@@ -30,24 +34,28 @@ export default function EquityCurve({ data }: EquityCurveProps) {
         <XAxis
           dataKey="date"
           tickFormatter={(date: string) => format(parseISO(date), 'MMM d')}
-          stroke="#9ca3af"
+          stroke={isDark ? '#9ca3af' : '#6b7280'}
           fontSize={12}
         />
         <YAxis
           tickFormatter={formatCurrency}
-          stroke="#9ca3af"
+          stroke={isDark ? '#9ca3af' : '#6b7280'}
           fontSize={12}
         />
         <Tooltip
           formatter={(value: number) => [formatCurrency(value), 'P&L']}
           labelFormatter={(label: string) => format(parseISO(label), 'MMM d, yyyy')}
           contentStyle={{
-            backgroundColor: 'white',
-            border: '1px solid #e5e7eb',
+            backgroundColor: isDark ? '#1f2937' : 'white',
+            border: isDark ? '1px solid #374151' : '1px solid #e5e7eb',
             borderRadius: '8px',
+            color: isDark ? '#f3f4f6' : '#111827',
+          }}
+          labelStyle={{
+            color: isDark ? '#f3f4f6' : '#111827',
           }}
         />
-        <ReferenceLine y={0} stroke="#d1d5db" strokeDasharray="3 3" />
+        <ReferenceLine y={0} stroke={isDark ? '#4b5563' : '#d1d5db'} strokeDasharray="3 3" />
         <Line
           type="monotone"
           dataKey="cumulative_pnl"

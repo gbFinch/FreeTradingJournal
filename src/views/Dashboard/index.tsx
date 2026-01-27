@@ -34,12 +34,12 @@ export default function Dashboard() {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
         <PeriodSelector />
       </div>
 
       {isLoading && (
-        <div className="text-center py-8 text-gray-500">Loading...</div>
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading...</div>
       )}
 
       {!isLoading && periodMetrics && (
@@ -92,27 +92,27 @@ export default function Dashboard() {
 
           {/* Win/Loss Summary */}
           <div className="grid grid-cols-3 gap-4 mb-8">
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-500">Wins</div>
-              <div className="text-2xl font-bold text-green-600">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <div className="text-sm text-gray-500 dark:text-gray-400">Wins</div>
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                 {periodMetrics.win_count}
               </div>
-              <div className="text-sm text-gray-400">
+              <div className="text-sm text-gray-400 dark:text-gray-500">
                 Max streak: {periodMetrics.max_win_streak}
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-500">Losses</div>
-              <div className="text-2xl font-bold text-red-600">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <div className="text-sm text-gray-500 dark:text-gray-400">Losses</div>
+              <div className="text-2xl font-bold text-red-600 dark:text-red-400">
                 {periodMetrics.loss_count}
               </div>
-              <div className="text-sm text-gray-400">
+              <div className="text-sm text-gray-400 dark:text-gray-500">
                 Max streak: {periodMetrics.max_loss_streak}
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-500">Breakeven</div>
-              <div className="text-2xl font-bold text-gray-600">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <div className="text-sm text-gray-500 dark:text-gray-400">Breakeven</div>
+              <div className="text-2xl font-bold text-gray-600 dark:text-gray-300">
                 {periodMetrics.breakeven_count}
               </div>
             </div>
@@ -122,15 +122,15 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Equity Curve */}
             {equityCurve.length > 0 && (
-              <div className="bg-white rounded-lg shadow p-4">
-                <h2 className="text-lg font-semibold mb-4">Equity Curve</h2>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Equity Curve</h2>
                 <EquityCurve data={equityCurve} />
               </div>
             )}
 
             {/* Calendar Heatmap */}
-            <div className="bg-white rounded-lg shadow p-4">
-              <h2 className="text-lg font-semibold mb-4">Daily P&L</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Daily P&L</h2>
               <CalendarHeatmap data={dailyPerformance} />
             </div>
           </div>
@@ -138,7 +138,7 @@ export default function Dashboard() {
       )}
 
       {!isLoading && !periodMetrics && (
-        <div className="text-center py-16 text-gray-500">
+        <div className="text-center py-16 text-gray-500 dark:text-gray-400">
           <p>No trades found for the selected period.</p>
           <p className="mt-2">Add some trades to see your metrics!</p>
         </div>
