@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import { useAccountsStore, useThemeStore, useTradesStore } from '@/stores';
+import { useAccountsStore, useThemeStore, useTradesStore, useMetricsStore } from '@/stores';
 import Dashboard from '@/views/Dashboard';
 import CalendarView from '@/views/CalendarView';
 import TradeList from '@/views/TradeList';
@@ -106,6 +106,7 @@ function App() {
   const [showTradeForm, setShowTradeForm] = useState(false);
   const { fetchAccounts, accounts, selectedAccountId } = useAccountsStore();
   const { fetchTrades } = useTradesStore();
+  const { fetchAll: fetchMetrics } = useMetricsStore();
 
   useEffect(() => {
     fetchAccounts();
@@ -145,6 +146,7 @@ function App() {
                   onSuccess={() => {
                     setShowTradeForm(false);
                     fetchTrades();
+                    fetchMetrics();
                   }}
                   onCancel={() => setShowTradeForm(false)}
                 />
