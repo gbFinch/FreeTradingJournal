@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import { useAccountsStore, useThemeStore } from '@/stores';
+import { useAccountsStore, useThemeStore, useTradesStore } from '@/stores';
 import Dashboard from '@/views/Dashboard';
 import CalendarView from '@/views/CalendarView';
 import TradeList from '@/views/TradeList';
 import TradeDetail from '@/views/TradeDetail';
+import TradeForm from '@/components/TradeForm';
 
 function ThemeToggle() {
   const { theme, toggleTheme } = useThemeStore();
@@ -28,7 +29,11 @@ function ThemeToggle() {
   );
 }
 
-function Sidebar() {
+interface SidebarProps {
+  onAddTrade: () => void;
+}
+
+function Sidebar({ onAddTrade }: SidebarProps) {
   return (
     <aside className="w-64 bg-gray-900 text-white flex flex-col">
       <div className="p-4 border-b border-gray-800 flex justify-between items-center">
@@ -36,6 +41,15 @@ function Sidebar() {
         <ThemeToggle />
       </div>
       <nav className="flex-1 p-4">
+        <button
+          onClick={onAddTrade}
+          className="w-full mb-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-medium"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Add Trade
+        </button>
         <ul className="space-y-2">
           <li>
             <NavLink
@@ -89,16 +103,20 @@ function Sidebar() {
 }
 
 function App() {
-  const { fetchAccounts } = useAccountsStore();
+  const [showTradeForm, setShowTradeForm] = useState(false);
+  const { fetchAccounts, accounts, selectedAccountId } = useAccountsStore();
+  const { fetchTrades } = useTradesStore();
 
   useEffect(() => {
     fetchAccounts();
   }, [fetchAccounts]);
 
+  const defaultAccountId = selectedAccountId ?? accounts[0]?.id ?? '';
+
   return (
     <BrowserRouter>
       <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-        <Sidebar />
+        <Sidebar onAddTrade={() => setShowTradeForm(true)} />
         <main className="flex-1 overflow-auto">
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -107,6 +125,33 @@ function App() {
             <Route path="/trades/:id" element={<TradeDetail />} />
           </Routes>
         </main>
+
+        {/* Add Trade Modal */}
+        {showTradeForm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-auto">
+              <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
+                <h2 className="text-lg font-semibold dark:text-gray-100">New Trade</h2>
+                <button
+                  onClick={() => setShowTradeForm(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  &times;
+                </button>
+              </div>
+              <div className="p-4">
+                <TradeForm
+                  defaultAccountId={defaultAccountId}
+                  onSuccess={() => {
+                    setShowTradeForm(false);
+                    fetchTrades();
+                  }}
+                  onCancel={() => setShowTradeForm(false)}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </BrowserRouter>
   );

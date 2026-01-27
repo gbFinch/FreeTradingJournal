@@ -2,11 +2,12 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
-import { useAccountsStore, useThemeStore } from "@/stores";
+import { useAccountsStore, useThemeStore, useTradesStore } from "@/stores";
 
 vi.mock("@/stores", () => ({
   useAccountsStore: vi.fn(),
   useThemeStore: vi.fn(),
+  useTradesStore: vi.fn(),
 }));
 
 vi.mock("@/views/Dashboard", () => ({
@@ -25,6 +26,10 @@ vi.mock("@/views/TradeDetail", () => ({
   default: () => <div data-testid="tradedetail-view">TradeDetail View</div>,
 }));
 
+vi.mock("@/components/TradeForm", () => ({
+  default: () => <div data-testid="trade-form">Trade Form</div>,
+}));
+
 // Helper to render App with custom initial route
 function renderWithRouter(initialRoute = "/") {
   // We need to render without BrowserRouter since App includes it
@@ -35,15 +40,21 @@ function renderWithRouter(initialRoute = "/") {
 describe("App", () => {
   const mockFetchAccounts = vi.fn();
   const mockToggleTheme = vi.fn();
+  const mockFetchTrades = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useAccountsStore).mockReturnValue({
       fetchAccounts: mockFetchAccounts,
+      accounts: [{ id: "acc-1", name: "Test Account" }],
+      selectedAccountId: "acc-1",
     });
     vi.mocked(useThemeStore).mockReturnValue({
       theme: "light",
       toggleTheme: mockToggleTheme,
+    });
+    vi.mocked(useTradesStore).mockReturnValue({
+      fetchTrades: mockFetchTrades,
     });
   });
 
@@ -158,6 +169,36 @@ describe("App", () => {
       fireEvent.click(button);
 
       expect(mockToggleTheme).toHaveBeenCalled();
+    });
+  });
+
+  describe("add trade button", () => {
+    it("renders Add Trade button in sidebar", () => {
+      renderWithRouter();
+
+      expect(screen.getByRole("button", { name: /add trade/i })).toBeInTheDocument();
+    });
+
+    it("opens trade form modal when Add Trade is clicked", () => {
+      renderWithRouter();
+
+      const addButton = screen.getByRole("button", { name: /add trade/i });
+      fireEvent.click(addButton);
+
+      expect(screen.getByText("New Trade")).toBeInTheDocument();
+      expect(screen.getByTestId("trade-form")).toBeInTheDocument();
+    });
+
+    it("closes modal when X button is clicked", () => {
+      renderWithRouter();
+
+      // Open modal
+      fireEvent.click(screen.getByRole("button", { name: /add trade/i }));
+      expect(screen.getByTestId("trade-form")).toBeInTheDocument();
+
+      // Close modal
+      fireEvent.click(screen.getByText("×"));
+      expect(screen.queryByTestId("trade-form")).not.toBeInTheDocument();
     });
   });
 
