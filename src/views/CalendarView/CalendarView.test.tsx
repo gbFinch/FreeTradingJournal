@@ -119,8 +119,9 @@ describe("CalendarView", () => {
     it("displays monthly total P&L", () => {
       render(<CalendarView />);
 
-      // 500 + (-200) = $300
-      expect(screen.getByText("$300")).toBeInTheDocument();
+      // 500 + (-200) = $300, shown in header badge
+      const pnlBadges = screen.getAllByText("$300");
+      expect(pnlBadges.length).toBeGreaterThan(0);
     });
 
     it("calls fetchDailyPerformance on mount", () => {
@@ -156,7 +157,7 @@ describe("CalendarView", () => {
     it("navigates to previous month", () => {
       render(<CalendarView />);
 
-      fireEvent.click(screen.getByText("←"));
+      fireEvent.click(screen.getByLabelText("Previous month"));
 
       expect(screen.getByText("December 2023")).toBeInTheDocument();
     });
@@ -164,7 +165,7 @@ describe("CalendarView", () => {
     it("navigates to next month", () => {
       render(<CalendarView />);
 
-      fireEvent.click(screen.getByText("→"));
+      fireEvent.click(screen.getByLabelText("Next month"));
 
       expect(screen.getByText("February 2024")).toBeInTheDocument();
     });
@@ -214,7 +215,7 @@ describe("CalendarView", () => {
       expect(screen.queryByText("January 15, 2024")).not.toBeInTheDocument();
     });
 
-    it("shows no trades message for empty day", () => {
+    it("days without trades are disabled", () => {
       vi.mocked(useTradesStore).mockReturnValue({
         trades: [],
         fetchTrades: mockFetchTrades,
@@ -222,17 +223,16 @@ describe("CalendarView", () => {
 
       render(<CalendarView />);
 
-      // Click on a day cell (find by day number text)
+      // Find day buttons - days without trades should be disabled
       const dayButtons = screen.getAllByRole("button");
-      // Find the button that contains just "1" as day number
+      // Find a button that contains just "1" as day number (a day without trades)
       const day1Button = dayButtons.find(b => {
-        const dayText = b.querySelector(".text-sm.font-medium");
+        const dayText = b.querySelector(".text-xs");
         return dayText?.textContent === "1";
       });
 
       if (day1Button) {
-        fireEvent.click(day1Button);
-        expect(screen.getByText("No trades on this day.")).toBeInTheDocument();
+        expect(day1Button).toBeDisabled();
       }
     });
   });
