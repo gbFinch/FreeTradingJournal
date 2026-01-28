@@ -29,7 +29,8 @@ cd src-tauri && sqlx migrate run  # Run database migrations
 ```
 
 **IMPORTANT**: When you work on a new feature or bug, create a git branch first. then work on changes in that branch for the remainder of the session
-**IMPORTANT**: After the feature or bugfix is implemented run tests
+**IMPORTANT**: After the feature or bugfix is implemented write tests for it and run tests
+**IMPORTANT**: When working on feature from feature-requests.md file after the task is completed and the user confirmed that change "Pending" to "Done"
 
 ## Documentation Structure
 

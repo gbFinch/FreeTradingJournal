@@ -2,13 +2,14 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
-import { useAccountsStore, useThemeStore, useTradesStore, useMetricsStore } from "@/stores";
+import { useAccountsStore, useThemeStore, useTradesStore, useMetricsStore, useSidebarStore } from "@/stores";
 
 vi.mock("@/stores", () => ({
   useAccountsStore: vi.fn(),
   useThemeStore: vi.fn(),
   useTradesStore: vi.fn(),
   useMetricsStore: vi.fn(),
+  useSidebarStore: vi.fn(),
 }));
 
 vi.mock("@/views/Dashboard", () => ({
@@ -43,6 +44,7 @@ describe("App", () => {
   const mockToggleTheme = vi.fn();
   const mockFetchTrades = vi.fn();
   const mockFetchMetrics = vi.fn();
+  const mockToggleCollapsed = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -60,6 +62,10 @@ describe("App", () => {
     });
     vi.mocked(useMetricsStore).mockReturnValue({
       fetchAll: mockFetchMetrics,
+    });
+    vi.mocked(useSidebarStore).mockReturnValue({
+      isCollapsed: false,
+      toggleCollapsed: mockToggleCollapsed,
     });
   });
 
