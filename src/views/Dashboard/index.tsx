@@ -119,10 +119,10 @@ export default function Dashboard() {
           </div>
 
           {/* Charts Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Equity Curve */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Equity Curve - 1/3 width */}
             {equityCurve.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex flex-col min-h-[400px]">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex flex-col min-h-[400px] lg:col-span-1">
                 <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Equity Curve</h2>
                 <div className="flex-1">
                   <EquityCurve data={equityCurve} />
@@ -130,8 +130,8 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Calendar Heatmap */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            {/* Calendar Heatmap - 2/3 width */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 lg:col-span-2">
               <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Daily P&L</h2>
               <CalendarHeatmap data={dailyPerformance} />
             </div>
