@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { useTradesStore } from '@/stores';
+import Select from '@/components/Select';
 import type { TradeWithDerived, CreateTradeInput, UpdateTradeInput, Direction, Status } from '@/types';
 
 interface TradeFormProps {
@@ -113,28 +114,28 @@ export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Direction *
           </label>
-          <select
+          <Select
             value={direction}
-            onChange={(e) => setDirection(e.target.value as Direction)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-100"
-          >
-            <option value="long" className="bg-white dark:bg-gray-700 dark:text-gray-100">Long</option>
-            <option value="short" className="bg-white dark:bg-gray-700 dark:text-gray-100">Short</option>
-          </select>
+            onChange={(value) => setDirection(value as Direction)}
+            options={[
+              { value: 'long', label: 'Long' },
+              { value: 'short', label: 'Short' },
+            ]}
+          />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Status
           </label>
-          <select
+          <Select
             value={status}
-            onChange={(e) => setStatus(e.target.value as Status)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-100"
-          >
-            <option value="closed" className="bg-white dark:bg-gray-700 dark:text-gray-100">Closed</option>
-            <option value="open" className="bg-white dark:bg-gray-700 dark:text-gray-100">Open</option>
-          </select>
+            onChange={(value) => setStatus(value as Status)}
+            options={[
+              { value: 'closed', label: 'Closed' },
+              { value: 'open', label: 'Open' },
+            ]}
+          />
         </div>
 
         <div>

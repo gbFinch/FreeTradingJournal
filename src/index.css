@@ -22,12 +22,6 @@ body {
   color-scheme: dark;
 }
 
-/* Ensure select elements respect dark mode styling */
-.dark select,
-.dark select option {
-  @apply bg-gray-700 text-gray-100;
-}
-
 /* Utility classes for PnL colors */
 .pnl-positive {
   @apply text-green-600 dark:text-green-400;
