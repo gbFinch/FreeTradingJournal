@@ -13,16 +13,17 @@ vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="responsive-container">{children}</div>
   ),
-  LineChart: ({ children, data }: { children: React.ReactNode; data: EquityPoint[] }) => (
-    <div data-testid="line-chart" data-points={data.length}>
+  AreaChart: ({ children, data }: { children: React.ReactNode; data: unknown[] }) => (
+    <div data-testid="area-chart" data-points={data.length}>
       {children}
     </div>
   ),
-  Line: () => <div data-testid="line" />,
+  Area: ({ stroke }: { stroke: string }) => <div data-testid="area" data-stroke={stroke} />,
   XAxis: () => <div data-testid="x-axis" />,
   YAxis: () => <div data-testid="y-axis" />,
   Tooltip: () => <div data-testid="tooltip" />,
   ReferenceLine: () => <div data-testid="reference-line" />,
+  CartesianGrid: () => <div data-testid="cartesian-grid" />,
 }));
 
 describe("EquityCurve", () => {
@@ -46,7 +47,7 @@ describe("EquityCurve", () => {
     it("does not render chart when no data", () => {
       render(<EquityCurve data={[]} />);
 
-      expect(screen.queryByTestId("line-chart")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("area-chart")).not.toBeInTheDocument();
     });
   });
 
@@ -57,11 +58,17 @@ describe("EquityCurve", () => {
       expect(screen.getByTestId("responsive-container")).toBeInTheDocument();
     });
 
-    it("renders the line chart with correct data points", () => {
+    it("renders the area chart with correct data points", () => {
       render(<EquityCurve data={mockData} />);
 
-      const chart = screen.getByTestId("line-chart");
+      const chart = screen.getByTestId("area-chart");
       expect(chart).toHaveAttribute("data-points", "3");
+    });
+
+    it("renders cartesian grid for value reference", () => {
+      render(<EquityCurve data={mockData} />);
+
+      expect(screen.getByTestId("cartesian-grid")).toBeInTheDocument();
     });
 
     it("renders chart axes", () => {
@@ -83,10 +90,10 @@ describe("EquityCurve", () => {
       expect(screen.getByTestId("reference-line")).toBeInTheDocument();
     });
 
-    it("renders the line", () => {
+    it("renders the area with gradient fill", () => {
       render(<EquityCurve data={mockData} />);
 
-      expect(screen.getByTestId("line")).toBeInTheDocument();
+      expect(screen.getByTestId("area")).toBeInTheDocument();
     });
   });
 
@@ -97,7 +104,7 @@ describe("EquityCurve", () => {
       render(<EquityCurve data={mockData} />);
 
       // Component renders without errors with light theme
-      expect(screen.getByTestId("line-chart")).toBeInTheDocument();
+      expect(screen.getByTestId("area-chart")).toBeInTheDocument();
     });
 
     it("supports dark theme", () => {
@@ -106,7 +113,33 @@ describe("EquityCurve", () => {
       render(<EquityCurve data={mockData} />);
 
       // Component renders without errors with dark theme
-      expect(screen.getByTestId("line-chart")).toBeInTheDocument();
+      expect(screen.getByTestId("area-chart")).toBeInTheDocument();
+    });
+  });
+
+  describe("gradient coloring", () => {
+    it("uses green stroke color when final PnL is positive", () => {
+      const positiveData: EquityPoint[] = [
+        { date: "2024-01-15", cumulative_pnl: 100, drawdown: 0 },
+        { date: "2024-01-16", cumulative_pnl: 500, drawdown: 0 },
+      ];
+
+      render(<EquityCurve data={positiveData} />);
+
+      const area = screen.getByTestId("area");
+      expect(area).toHaveAttribute("data-stroke", "#22c55e");
+    });
+
+    it("uses red stroke color when final PnL is negative", () => {
+      const negativeData: EquityPoint[] = [
+        { date: "2024-01-15", cumulative_pnl: 100, drawdown: 0 },
+        { date: "2024-01-16", cumulative_pnl: -200, drawdown: -300 },
+      ];
+
+      render(<EquityCurve data={negativeData} />);
+
+      const area = screen.getByTestId("area");
+      expect(area).toHaveAttribute("data-stroke", "#ef4444");
     });
   });
 });
