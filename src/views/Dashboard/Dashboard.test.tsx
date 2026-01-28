@@ -51,6 +51,7 @@ const mockDailyPerformance: DailyPerformance[] = [
 
 describe("Dashboard", () => {
   const mockFetchAll = vi.fn();
+  const mockSetPeriodType = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -63,6 +64,7 @@ describe("Dashboard", () => {
         equityCurve: [],
         dailyPerformance: [],
         fetchAll: mockFetchAll,
+        setPeriodType: mockSetPeriodType,
         isLoading: true,
       });
 
@@ -79,6 +81,7 @@ describe("Dashboard", () => {
         equityCurve: [],
         dailyPerformance: [],
         fetchAll: mockFetchAll,
+        setPeriodType: mockSetPeriodType,
         isLoading: false,
       });
 
@@ -96,6 +99,7 @@ describe("Dashboard", () => {
         equityCurve: mockEquityCurve,
         dailyPerformance: mockDailyPerformance,
         fetchAll: mockFetchAll,
+        setPeriodType: mockSetPeriodType,
         isLoading: false,
       });
     });
@@ -116,6 +120,12 @@ describe("Dashboard", () => {
       render(<Dashboard />);
 
       expect(mockFetchAll).toHaveBeenCalled();
+    });
+
+    it("resets period to 'month' on mount", () => {
+      render(<Dashboard />);
+
+      expect(mockSetPeriodType).toHaveBeenCalledWith("month");
     });
 
     it("displays Net P&L metric with value and trade count", () => {
@@ -192,6 +202,7 @@ describe("Dashboard", () => {
         equityCurve: [],
         dailyPerformance: [],
         fetchAll: mockFetchAll,
+        setPeriodType: mockSetPeriodType,
         isLoading: false,
       });
 
@@ -208,6 +219,7 @@ describe("Dashboard", () => {
         equityCurve: [],
         dailyPerformance: [],
         fetchAll: mockFetchAll,
+        setPeriodType: mockSetPeriodType,
         isLoading: false,
       });
 
@@ -226,6 +238,7 @@ describe("Dashboard", () => {
         equityCurve: [],
         dailyPerformance: [],
         fetchAll: mockFetchAll,
+        setPeriodType: mockSetPeriodType,
         isLoading: false,
       });
 
@@ -241,6 +254,7 @@ describe("Dashboard", () => {
         equityCurve: [],
         dailyPerformance: [],
         fetchAll: mockFetchAll,
+        setPeriodType: mockSetPeriodType,
         isLoading: false,
       });
 
@@ -256,6 +270,7 @@ describe("Dashboard", () => {
         equityCurve: [],
         dailyPerformance: [],
         fetchAll: mockFetchAll,
+        setPeriodType: mockSetPeriodType,
         isLoading: false,
       });
 

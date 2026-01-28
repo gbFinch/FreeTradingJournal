@@ -6,11 +6,14 @@ import CalendarHeatmap from '@/components/CalendarHeatmap';
 import PeriodSelector from '@/components/PeriodSelector';
 
 export default function Dashboard() {
-  const { periodMetrics, equityCurve, dailyPerformance, fetchAll, isLoading } = useMetricsStore();
+  const { periodMetrics, equityCurve, dailyPerformance, fetchAll, isLoading, setPeriodType } = useMetricsStore();
 
   useEffect(() => {
+    // Reset to 'month' period when Dashboard mounts to ensure
+    // "This Month" is selected (fixes stale state from CalendarView)
+    setPeriodType('month');
     fetchAll();
-  }, [fetchAll]);
+  }, [setPeriodType, fetchAll]);
 
   return (
     <div className="p-6">
