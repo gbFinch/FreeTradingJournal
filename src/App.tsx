@@ -36,16 +36,10 @@ interface SidebarProps {
 function Sidebar({ onAddTrade }: SidebarProps) {
   const { isCollapsed, toggleCollapsed } = useSidebarStore();
 
-  // Text fades and shrinks, gap also transitions to 0
-  const textClass = `whitespace-nowrap overflow-hidden transition-[opacity,max-width] duration-300 ${
-    isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-48'
+  // Text fades out in place without moving
+  const textClass = `whitespace-nowrap transition-opacity duration-300 ${
+    isCollapsed ? 'opacity-0' : 'opacity-100'
   }`;
-
-  // Gap transitions from 8px to 0 when collapsed
-  const gapClass = `transition-[gap] duration-300 ${isCollapsed ? 'gap-0' : 'gap-2'}`;
-
-  // Buttons shrink to fit icon when collapsed
-  const buttonClass = `transition-[width] duration-300 ${isCollapsed ? 'w-10' : 'w-full'}`;
 
   return (
     <aside
@@ -79,7 +73,7 @@ function Sidebar({ onAddTrade }: SidebarProps) {
       <nav className="flex-1 p-2 overflow-hidden">
         <button
           onClick={onAddTrade}
-          className={`mb-4 p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-[gap,width] duration-300 flex items-center font-medium ${gapClass} ${buttonClass}`}
+          className="mb-4 p-2 w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-2 font-medium"
           title="Add Trade"
         >
           <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -93,7 +87,7 @@ function Sidebar({ onAddTrade }: SidebarProps) {
               to="/"
               title="Dashboard"
               className={({ isActive }) =>
-                `flex items-center p-2 rounded-lg transition-[gap,width] duration-300 ${gapClass} ${buttonClass} ${
+                `flex items-center gap-2 p-2 w-full rounded-lg ${
                   isActive
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'
@@ -111,7 +105,7 @@ function Sidebar({ onAddTrade }: SidebarProps) {
               to="/calendar"
               title="Calendar"
               className={({ isActive }) =>
-                `flex items-center p-2 rounded-lg transition-[gap,width] duration-300 ${gapClass} ${buttonClass} ${
+                `flex items-center gap-2 p-2 w-full rounded-lg ${
                   isActive
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'
@@ -129,7 +123,7 @@ function Sidebar({ onAddTrade }: SidebarProps) {
               to="/trades"
               title="Trades"
               className={({ isActive }) =>
-                `flex items-center p-2 rounded-lg transition-[gap,width] duration-300 ${gapClass} ${buttonClass} ${
+                `flex items-center gap-2 p-2 w-full rounded-lg ${
                   isActive
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'
@@ -146,7 +140,7 @@ function Sidebar({ onAddTrade }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className={`p-2 border-t border-gray-200 dark:border-gray-800 text-sm text-gray-500 flex items-center justify-center overflow-hidden ${gapClass}`}>
+      <div className="p-2 border-t border-gray-200 dark:border-gray-800 text-sm text-gray-500 flex items-center justify-center gap-2 overflow-hidden">
         <span className={textClass}>v0.1.0</span>
         <ThemeToggle />
       </div>
