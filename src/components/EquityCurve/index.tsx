@@ -22,14 +22,15 @@ export default function EquityCurve({ data }: EquityCurveProps) {
 
   if (data.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center text-gray-400">
+      <div className="h-full min-h-[200px] flex items-center justify-center text-gray-400">
         No data to display
       </div>
     );
   }
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <div className="w-full h-full">
+      <ResponsiveContainer width="100%" height="100%">
       <LineChart data={data} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
         <XAxis
           dataKey="date"
@@ -65,6 +66,7 @@ export default function EquityCurve({ data }: EquityCurveProps) {
           activeDot={{ r: 4 }}
         />
       </LineChart>
-    </ResponsiveContainer>
+      </ResponsiveContainer>
+    </div>
   );
 }

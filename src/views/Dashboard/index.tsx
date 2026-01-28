@@ -122,9 +122,11 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Equity Curve */}
             {equityCurve.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex flex-col min-h-[400px]">
                 <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Equity Curve</h2>
-                <EquityCurve data={equityCurve} />
+                <div className="flex-1">
+                  <EquityCurve data={equityCurve} />
+                </div>
               </div>
             )}
 

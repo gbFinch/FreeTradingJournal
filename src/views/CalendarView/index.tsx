@@ -27,14 +27,19 @@ function DayCell({ date, isCurrentMonth, performance, onClick }: DayCellProps) {
     <button
       onClick={onClick}
       className={clsx(
-        'h-24 p-2 border border-gray-200 dark:border-gray-700 text-left transition-colors',
+        'h-24 p-2 border border-gray-200 dark:border-gray-700 text-left transition-colors relative',
         isCurrentMonth ? 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700' : 'bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500',
         hasData && 'cursor-pointer'
       )}
     >
-      <div className="text-sm font-medium dark:text-gray-200">{format(date, 'd')}</div>
+      <span className={clsx(
+        'absolute top-1 left-2 text-xs',
+        isCurrentMonth ? 'text-gray-500 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'
+      )}>
+        {format(date, 'd')}
+      </span>
       {hasData && (
-        <div className="mt-1">
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
           <div
             className={clsx(
               'text-lg font-bold',

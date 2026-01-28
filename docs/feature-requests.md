@@ -1,2 +1,4 @@
 1. Left panel does not change color when toggling light mode and dark mode - [Done]
 2. In modal window for new trade "direction" and "status" field stay white when switching to dark mode - [Done]
+3. In equity curve widget auto sizing is wrong. The chart is not autoscaled to widget size - [Done]
+4. In daily p&l calendar in dashboard when there are trades the date number is missing. Move date number to the right left corner of the date box - [Done]

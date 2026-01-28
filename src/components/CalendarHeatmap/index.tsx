@@ -114,25 +114,27 @@ export default function CalendarHeatmap({ data }: CalendarHeatmapProps) {
               <div
                 key={day.isEmpty ? `empty-${idx}` : day.date}
                 className={`
-                  aspect-square rounded-sm flex flex-col items-center justify-center
+                  aspect-square rounded-sm relative flex flex-col items-center justify-center
                   text-xs transition-all
                   ${day.isEmpty
                     ? 'bg-transparent'
                     : day.tradeCount === 0
-                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
+                      ? 'bg-gray-100 dark:bg-gray-700'
                       : `${getDayColor(day.pnl)} text-white cursor-pointer hover:opacity-80`
                   }
                 `}
                 title={day.isEmpty ? '' : `${day.date}: ${day.pnl >= 0 ? '+' : ''}$${day.pnl.toFixed(2)} (${day.tradeCount} trades)`}
               >
+                {!day.isEmpty && (
+                  <span className={`absolute top-0.5 left-1 text-[10px] ${day.tradeCount > 0 ? 'opacity-75' : 'text-gray-400 dark:text-gray-500'}`}>
+                    {parseISO(day.date).getDate()}
+                  </span>
+                )}
                 {!day.isEmpty && day.tradeCount > 0 && (
                   <>
                     <span className="font-medium">{formatCurrency(day.pnl)}</span>
                     <span className="text-[10px] opacity-75">{day.tradeCount}t</span>
                   </>
-                )}
-                {!day.isEmpty && day.tradeCount === 0 && (
-                  <span className="text-gray-300 dark:text-gray-500">{parseISO(day.date).getDate()}</span>
                 )}
               </div>
             ))}
