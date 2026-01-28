@@ -118,8 +118,8 @@ export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel
             onChange={(e) => setDirection(e.target.value as Direction)}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-100"
           >
-            <option value="long">Long</option>
-            <option value="short">Short</option>
+            <option value="long" className="bg-white dark:bg-gray-700 dark:text-gray-100">Long</option>
+            <option value="short" className="bg-white dark:bg-gray-700 dark:text-gray-100">Short</option>
           </select>
         </div>
 
@@ -132,8 +132,8 @@ export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel
             onChange={(e) => setStatus(e.target.value as Status)}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-100"
           >
-            <option value="closed">Closed</option>
-            <option value="open">Open</option>
+            <option value="closed" className="bg-white dark:bg-gray-700 dark:text-gray-100">Closed</option>
+            <option value="open" className="bg-white dark:bg-gray-700 dark:text-gray-100">Open</option>
           </select>
         </div>
 
