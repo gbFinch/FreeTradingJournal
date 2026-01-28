@@ -17,6 +17,18 @@ body {
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Force dark mode color scheme for native form controls */
+.dark {
+  color-scheme: dark;
+}
+
+/* Ensure select elements respect dark mode styling */
+.dark select,
+.dark select option {
+  background-color: rgb(55, 65, 81); /* gray-700 */
+  color: rgb(243, 244, 246); /* gray-100 */
+}
+
 /* Utility classes for PnL colors */
 .pnl-positive {
   @apply text-green-600 dark:text-green-400;
