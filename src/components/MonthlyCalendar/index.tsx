@@ -57,7 +57,7 @@ export default function MonthlyCalendar({
   const monthStats = useMemo(() => calculateMonthStats(data), [data]);
 
   return (
-    <div className="bg-gray-900 rounded-lg p-4">
+    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
       <CalendarHeader
         month={currentMonth}
         stats={monthStats}
@@ -73,7 +73,7 @@ export default function MonthlyCalendar({
           {DAY_HEADERS.map((day) => (
             <div
               key={day}
-              className="text-center text-sm font-medium text-gray-400 py-2"
+              className="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2"
             >
               {day}
             </div>

@@ -29,7 +29,7 @@ export default function CalendarHeader({
           <>
             <button
               onClick={onPrevMonth}
-              className="p-2 hover:bg-gray-700 rounded-md text-gray-300 transition-colors"
+              className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
               aria-label="Previous month"
             >
               <svg
@@ -46,12 +46,12 @@ export default function CalendarHeader({
                 />
               </svg>
             </button>
-            <h2 className="text-xl font-semibold text-gray-100 min-w-[160px]">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 min-w-[160px]">
               {format(month, 'MMMM yyyy')}
             </h2>
             <button
               onClick={onNextMonth}
-              className="p-2 hover:bg-gray-700 rounded-md text-gray-300 transition-colors"
+              className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
               aria-label="Next month"
             >
               <svg
@@ -69,7 +69,7 @@ export default function CalendarHeader({
               </svg>
             </button>
             {isCurrentMonth && (
-              <span className="px-3 py-1.5 text-sm bg-gray-700 text-gray-200 rounded-md">
+              <span className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md">
                 This month
               </span>
             )}
@@ -82,15 +82,15 @@ export default function CalendarHeader({
           className={clsx(
             'px-3 py-1 rounded-md font-semibold',
             stats.totalPnl > 0
-              ? 'bg-green-600/20 text-green-400'
+              ? 'bg-green-100 dark:bg-green-600/20 text-green-700 dark:text-green-400'
               : stats.totalPnl < 0
-              ? 'bg-red-600/20 text-red-400'
-              : 'bg-gray-700 text-gray-300'
+              ? 'bg-red-100 dark:bg-red-600/20 text-red-700 dark:text-red-400'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
           )}
         >
           {formatCurrencyCompact(stats.totalPnl)}
         </span>
-        <span className="text-gray-400">
+        <span className="text-gray-500 dark:text-gray-400">
           {stats.tradingDays} day{stats.tradingDays !== 1 ? 's' : ''}
         </span>
       </div>

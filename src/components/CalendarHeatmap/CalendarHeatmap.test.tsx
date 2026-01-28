@@ -62,11 +62,13 @@ describe("CalendarHeatmap", () => {
 
       // Check that day cells with data have appropriate title attributes
       // Title format: positive uses "+$", negative uses "$-"
+      // Light mode uses bg-emerald-100, dark mode uses dark:bg-emerald-900
       const winningDayCell = screen.getByTitle("2024-01-15: +$500.00 (3 trades)");
-      expect(winningDayCell).toHaveClass("bg-emerald-900");
+      expect(winningDayCell).toHaveClass("bg-emerald-100");
 
+      // Light mode uses bg-red-100, dark mode uses dark:bg-[#6b1c1c]
       const losingDayCell = screen.getByTitle("2024-01-16: $-200.00 (2 trades)");
-      expect(losingDayCell).toHaveClass("bg-[#6b1c1c]");
+      expect(losingDayCell).toHaveClass("bg-red-100");
     });
 
     it("shows tooltip with date and P&L details", () => {

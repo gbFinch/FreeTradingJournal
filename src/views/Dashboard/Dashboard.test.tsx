@@ -198,7 +198,8 @@ describe("Dashboard", () => {
       render(<Dashboard />);
 
       const pnlValue = screen.getByText("$1,000.00");
-      expect(pnlValue).toHaveClass("text-green-400");
+      // Light mode uses text-green-600, dark mode uses dark:text-green-400
+      expect(pnlValue).toHaveClass("text-green-600");
     });
 
     it("applies red color for negative P&L", () => {
@@ -213,7 +214,8 @@ describe("Dashboard", () => {
       render(<Dashboard />);
 
       const pnlValue = screen.getByText("-$500.00");
-      expect(pnlValue).toHaveClass("text-red-400");
+      // Light mode uses text-red-600, dark mode uses dark:text-red-400
+      expect(pnlValue).toHaveClass("text-red-600");
     });
   });
 

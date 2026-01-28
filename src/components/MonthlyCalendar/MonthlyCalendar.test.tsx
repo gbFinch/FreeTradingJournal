@@ -144,13 +144,15 @@ describe('MonthlyCalendar', () => {
     it('applies green background for positive PnL', () => {
       render(<MonthlyCalendar data={mockData} month={new Date('2024-06-15')} />);
       const winningDay = screen.getByText('$500').closest('button');
-      expect(winningDay).toHaveClass('bg-emerald-900');
+      // Light mode uses bg-emerald-100, dark mode uses dark:bg-emerald-900
+      expect(winningDay).toHaveClass('bg-emerald-100');
     });
 
     it('applies red background for negative PnL', () => {
       render(<MonthlyCalendar data={mockData} month={new Date('2024-06-15')} />);
       const losingDay = screen.getByText('-$200').closest('button');
-      expect(losingDay).toHaveClass('bg-[#6b1c1c]');
+      // Light mode uses bg-red-100, dark mode uses dark:bg-[#6b1c1c]
+      expect(losingDay).toHaveClass('bg-red-100');
     });
   });
 });
