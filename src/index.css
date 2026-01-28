@@ -25,8 +25,7 @@ body {
 /* Ensure select elements respect dark mode styling */
 .dark select,
 .dark select option {
-  background-color: rgb(55, 65, 81); /* gray-700 */
-  color: rgb(243, 244, 246); /* gray-100 */
+  @apply bg-gray-700 text-gray-100;
 }
 
 /* Utility classes for PnL colors */
