@@ -44,8 +44,8 @@ function Sidebar({ onAddTrade }: SidebarProps) {
   return (
     <aside
       className={`${
-        isCollapsed ? 'w-16' : 'w-64'
-      } relative z-10 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white flex flex-col transition-[width] duration-300 ease-in-out`}
+        isCollapsed ? 'w-[52px]' : 'w-64'
+      } relative z-10 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white flex flex-col transition-[width] duration-300 ease-in-out border-r border-gray-200 dark:border-gray-700`}
     >
       {/* Floating toggle button */}
       <button
@@ -141,7 +141,7 @@ function Sidebar({ onAddTrade }: SidebarProps) {
 
       {/* Footer */}
       <div className="p-2 border-t border-gray-200 dark:border-gray-800 text-sm text-gray-500 flex items-center justify-center gap-2 overflow-hidden">
-        <span className={textClass}>v0.1.0</span>
+        {!isCollapsed && <span className={textClass}>v0.1.0</span>}
         <ThemeToggle />
       </div>
     </aside>
