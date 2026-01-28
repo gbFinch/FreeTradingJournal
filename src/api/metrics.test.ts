@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@/mocks/invoke";
 import {
   getDailyPerformance,
   getPeriodMetrics,
@@ -8,8 +8,9 @@ import {
 } from "./metrics";
 import type { DailyPerformance, PeriodMetrics, EquityPoint } from "@/types";
 
-vi.mock("@tauri-apps/api/core", () => ({
+vi.mock("@/mocks/invoke", () => ({
   invoke: vi.fn(),
+  isTauri: vi.fn(() => false),
 }));
 
 const mockDailyPerformance: DailyPerformance[] = [

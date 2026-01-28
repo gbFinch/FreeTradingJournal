@@ -7,9 +7,10 @@ afterEach(() => {
   cleanup();
 });
 
-// Mock Tauri API for tests
-vi.mock("@tauri-apps/api/core", () => ({
+// Mock the invoke wrapper for tests
+vi.mock("@/mocks/invoke", () => ({
   invoke: vi.fn(),
+  isTauri: vi.fn(() => false),
 }));
 
 // Mock window.matchMedia for components using media queries

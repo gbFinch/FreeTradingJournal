@@ -1,10 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@/mocks/invoke";
 import { getAccounts, createAccount } from "./accounts";
 import type { Account } from "@/types";
 
-vi.mock("@tauri-apps/api/core", () => ({
+vi.mock("@/mocks/invoke", () => ({
   invoke: vi.fn(),
+  isTauri: vi.fn(() => false),
 }));
 
 const mockAccount: Account = {

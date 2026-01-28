@@ -1,10 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@/mocks/invoke";
 import { getTrades, getTrade, createTrade, updateTrade, deleteTrade } from "./trades";
 import type { TradeWithDerived, CreateTradeInput, UpdateTradeInput } from "@/types";
 
-vi.mock("@tauri-apps/api/core", () => ({
+vi.mock("@/mocks/invoke", () => ({
   invoke: vi.fn(),
+  isTauri: vi.fn(() => false),
 }));
 
 const mockTrade: TradeWithDerived = {

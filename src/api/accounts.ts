@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from '@/mocks/invoke';
 import type { Account } from '@/types';
 
 export async function getAccounts(): Promise<Account[]> {

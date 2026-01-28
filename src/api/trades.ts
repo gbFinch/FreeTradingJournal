@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from '@/mocks/invoke';
 import type { TradeWithDerived, CreateTradeInput, UpdateTradeInput } from '@/types';
 
 export async function getTrades(params?: {
