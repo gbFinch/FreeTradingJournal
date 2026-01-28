@@ -118,59 +118,56 @@ describe("Dashboard", () => {
       expect(mockFetchAll).toHaveBeenCalled();
     });
 
-    it("displays total P&L metric", () => {
+    it("displays Net P&L metric with value and trade count", () => {
       render(<Dashboard />);
 
-      expect(screen.getByText("Total Net P&L")).toBeInTheDocument();
+      expect(screen.getByText("Net P&L")).toBeInTheDocument();
       expect(screen.getByText("$5,000.00")).toBeInTheDocument();
+      expect(screen.getByText("50")).toBeInTheDocument(); // trade count badge
     });
 
-    it("displays trade count", () => {
+    it("displays profit factor with value", () => {
       render(<Dashboard />);
 
-      expect(screen.getByText("Trade Count")).toBeInTheDocument();
-      expect(screen.getByText("50")).toBeInTheDocument();
-    });
-
-    it("displays win rate", () => {
-      render(<Dashboard />);
-
-      expect(screen.getByText("Win Rate")).toBeInTheDocument();
-      expect(screen.getByText("62.5%")).toBeInTheDocument();
-    });
-
-    it("displays profit factor", () => {
-      render(<Dashboard />);
-
-      expect(screen.getByText("Profit Factor")).toBeInTheDocument();
+      expect(screen.getByText("Profit factor")).toBeInTheDocument();
       expect(screen.getByText("2.78")).toBeInTheDocument();
     });
 
-    it("displays avg win and loss", () => {
+    it("displays trade win percentage", () => {
       render(<Dashboard />);
 
-      expect(screen.getByText("Avg Win")).toBeInTheDocument();
-      expect(screen.getByText("$250.00")).toBeInTheDocument();
-      expect(screen.getByText("Avg Loss")).toBeInTheDocument();
-      expect(screen.getByText("-$150.00")).toBeInTheDocument();
+      expect(screen.getByText("Trade win %")).toBeInTheDocument();
+      expect(screen.getByText("62.50%")).toBeInTheDocument();
     });
 
-    it("displays win/loss/breakeven counts", () => {
+    it("displays win/loss/breakeven counts in trade win card", () => {
       render(<Dashboard />);
 
-      expect(screen.getByText("Wins")).toBeInTheDocument();
-      expect(screen.getByText("30")).toBeInTheDocument();
-      expect(screen.getByText("Losses")).toBeInTheDocument();
-      expect(screen.getByText("18")).toBeInTheDocument();
-      expect(screen.getByText("Breakeven")).toBeInTheDocument();
-      expect(screen.getByText("2")).toBeInTheDocument();
+      // These appear as small numbers below the gauge
+      expect(screen.getByText("30")).toBeInTheDocument(); // wins
+      expect(screen.getByText("18")).toBeInTheDocument(); // losses
+      expect(screen.getByText("2")).toBeInTheDocument();  // breakeven
     });
 
-    it("displays max streaks", () => {
+    it("displays avg win/loss trade ratio", () => {
       render(<Dashboard />);
 
-      expect(screen.getByText("Max streak: 5")).toBeInTheDocument();
-      expect(screen.getByText("Max streak: 3")).toBeInTheDocument();
+      expect(screen.getByText("Avg win/loss trade")).toBeInTheDocument();
+      expect(screen.getByText("1.67")).toBeInTheDocument(); // 250/150 ratio
+    });
+
+    it("displays avg win and loss values in bar", () => {
+      render(<Dashboard />);
+
+      expect(screen.getByText("$250")).toBeInTheDocument();
+      expect(screen.getByText("-$150")).toBeInTheDocument();
+    });
+
+    it("displays trade expectancy", () => {
+      render(<Dashboard />);
+
+      expect(screen.getByText("Trade expectancy")).toBeInTheDocument();
+      expect(screen.getByText("$100.00")).toBeInTheDocument();
     });
 
     it("renders equity curve", () => {
@@ -201,7 +198,7 @@ describe("Dashboard", () => {
       render(<Dashboard />);
 
       const pnlValue = screen.getByText("$1,000.00");
-      expect(pnlValue).toHaveClass("text-green-600");
+      expect(pnlValue).toHaveClass("text-green-400");
     });
 
     it("applies red color for negative P&L", () => {
@@ -216,12 +213,42 @@ describe("Dashboard", () => {
       render(<Dashboard />);
 
       const pnlValue = screen.getByText("-$500.00");
-      expect(pnlValue).toHaveClass("text-red-600");
+      expect(pnlValue).toHaveClass("text-red-400");
     });
   });
 
   describe("null value handling", () => {
-    it("displays N/A for null win rate", () => {
+    it("displays N/A for null profit factor", () => {
+      vi.mocked(useMetricsStore).mockReturnValue({
+        periodMetrics: { ...mockPeriodMetrics, profit_factor: null },
+        equityCurve: [],
+        dailyPerformance: [],
+        fetchAll: mockFetchAll,
+        isLoading: false,
+      });
+
+      render(<Dashboard />);
+
+      const profitFactorCard = screen.getByText("Profit factor").closest("div")?.parentElement;
+      expect(profitFactorCard).toHaveTextContent("N/A");
+    });
+
+    it("displays N/A for null expectancy", () => {
+      vi.mocked(useMetricsStore).mockReturnValue({
+        periodMetrics: { ...mockPeriodMetrics, expectancy: null },
+        equityCurve: [],
+        dailyPerformance: [],
+        fetchAll: mockFetchAll,
+        isLoading: false,
+      });
+
+      render(<Dashboard />);
+
+      const expectancyCard = screen.getByText("Trade expectancy").closest("div")?.parentElement;
+      expect(expectancyCard).toHaveTextContent("N/A");
+    });
+
+    it("displays 0.00% for null win rate", () => {
       vi.mocked(useMetricsStore).mockReturnValue({
         periodMetrics: { ...mockPeriodMetrics, win_rate: null },
         equityCurve: [],
@@ -232,8 +259,7 @@ describe("Dashboard", () => {
 
       render(<Dashboard />);
 
-      const winRateCard = screen.getByText("Win Rate").closest("div");
-      expect(winRateCard?.parentElement).toHaveTextContent("N/A");
+      expect(screen.getByText("0.00%")).toBeInTheDocument();
     });
   });
 });

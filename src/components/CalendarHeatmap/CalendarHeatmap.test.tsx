@@ -46,36 +46,34 @@ describe("CalendarHeatmap", () => {
     it("displays formatted P&L for losing days", () => {
       render(<CalendarHeatmap data={mockData} />);
 
-      // formatCurrency returns "$-200" for negative values
-      expect(screen.getByText("$-200")).toBeInTheDocument();
+      // formatCurrency returns "-$200" for negative values
+      expect(screen.getByText("-$200")).toBeInTheDocument();
     });
 
     it("displays trade count", () => {
       render(<CalendarHeatmap data={mockData} />);
 
-      expect(screen.getByText("3t")).toBeInTheDocument();
-      expect(screen.getByText("2t")).toBeInTheDocument();
+      expect(screen.getByText("3 trades")).toBeInTheDocument();
+      expect(screen.getByText("2 trades")).toBeInTheDocument();
     });
 
-    it("applies green color for positive P&L", () => {
+    it("applies correct colors for P&L cells", () => {
       render(<CalendarHeatmap data={mockData} />);
 
-      const winningDay = screen.getByText("$500").closest("div");
-      expect(winningDay).toHaveClass("bg-green-500");
-    });
+      // Check that day cells with data have appropriate title attributes
+      // Title format: positive uses "+$", negative uses "$-"
+      const winningDayCell = screen.getByTitle("2024-01-15: +$500.00 (3 trades)");
+      expect(winningDayCell).toHaveClass("bg-emerald-900");
 
-    it("applies red color for negative P&L", () => {
-      render(<CalendarHeatmap data={mockData} />);
-
-      const losingDay = screen.getByText("$-200").closest("div");
-      expect(losingDay).toHaveClass("bg-red-500");
+      const losingDayCell = screen.getByTitle("2024-01-16: $-200.00 (2 trades)");
+      expect(losingDayCell).toHaveClass("bg-[#6b1c1c]");
     });
 
     it("shows tooltip with date and P&L details", () => {
       render(<CalendarHeatmap data={mockData} />);
 
-      const winningDay = screen.getByText("$500").closest("div");
-      expect(winningDay).toHaveAttribute("title", "2024-01-15: +$500.00 (3 trades)");
+      expect(screen.getByTitle("2024-01-15: +$500.00 (3 trades)")).toBeInTheDocument();
+      expect(screen.getByTitle("2024-01-16: $-200.00 (2 trades)")).toBeInTheDocument();
     });
   });
 
@@ -87,7 +85,9 @@ describe("CalendarHeatmap", () => {
 
       render(<CalendarHeatmap data={largeData} />);
 
-      expect(screen.getByText("$2.5K")).toBeInTheDocument();
+      // Value appears in both day cell and header, use getAllByText
+      const matches = screen.getAllByText("$2.5K");
+      expect(matches.length).toBeGreaterThan(0);
     });
 
     it("formats negative large values with K suffix", () => {
@@ -97,8 +97,9 @@ describe("CalendarHeatmap", () => {
 
       render(<CalendarHeatmap data={largeData} />);
 
-      // formatCurrency returns "$-1.5K" for negative values
-      expect(screen.getByText("$-1.5K")).toBeInTheDocument();
+      // Value appears in both day cell and header, use getAllByText
+      const matches = screen.getAllByText("-$1.5K");
+      expect(matches.length).toBeGreaterThan(0);
     });
   });
 
@@ -113,6 +114,23 @@ describe("CalendarHeatmap", () => {
 
       expect(screen.getByText("January 2024")).toBeInTheDocument();
       expect(screen.getByText("February 2024")).toBeInTheDocument();
+    });
+  });
+
+  describe("weekly summaries", () => {
+    it("displays week labels", () => {
+      render(<CalendarHeatmap data={mockData} />);
+
+      expect(screen.getByText("Week 1")).toBeInTheDocument();
+    });
+
+    it("displays month total in header", () => {
+      render(<CalendarHeatmap data={mockData} />);
+
+      // Total is 500 - 200 + 0 = 300, appears in header
+      // Use getAllByText since it may appear multiple times
+      const matches = screen.getAllByText("$300");
+      expect(matches.length).toBeGreaterThan(0);
     });
   });
 });
