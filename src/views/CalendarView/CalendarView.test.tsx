@@ -1,12 +1,17 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import CalendarView from "./index";
-import { useMetricsStore, useTradesStore } from "@/stores";
+import { useMetricsStore } from "@/stores";
+import * as tradesApi from "@/api/trades";
 import type { DailyPerformance, TradeWithDerived } from "@/types";
 
 vi.mock("@/stores", () => ({
   useMetricsStore: vi.fn(),
-  useTradesStore: vi.fn(),
+}));
+
+vi.mock("@/api/trades", () => ({
+  getTrades: vi.fn(),
 }));
 
 const mockDailyPerformance: DailyPerformance[] = [
@@ -43,16 +48,24 @@ const mockTrade: TradeWithDerived = {
   result: "win",
 };
 
+function renderWithRouter(initialEntries = ["/calendar"]) {
+  return render(
+    <MemoryRouter initialEntries={initialEntries}>
+      <CalendarView />
+    </MemoryRouter>
+  );
+}
+
 describe("CalendarView", () => {
   const mockFetchDailyPerformance = vi.fn();
   const mockSetDateRange = vi.fn();
-  const mockFetchTrades = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     // Set a fixed date for consistent testing
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2024-01-20"));
+    vi.mocked(tradesApi.getTrades).mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -67,12 +80,8 @@ describe("CalendarView", () => {
         setDateRange: mockSetDateRange,
         isLoading: true,
       });
-      vi.mocked(useTradesStore).mockReturnValue({
-        trades: [],
-        fetchTrades: mockFetchTrades,
-      });
 
-      render(<CalendarView />);
+      renderWithRouter();
 
       expect(screen.getByText("Loading...")).toBeInTheDocument();
     });
@@ -86,26 +95,22 @@ describe("CalendarView", () => {
         setDateRange: mockSetDateRange,
         isLoading: false,
       });
-      vi.mocked(useTradesStore).mockReturnValue({
-        trades: [],
-        fetchTrades: mockFetchTrades,
-      });
     });
 
     it("renders page title", () => {
-      render(<CalendarView />);
+      renderWithRouter();
 
       expect(screen.getByText("Calendar")).toBeInTheDocument();
     });
 
     it("displays current month and year", () => {
-      render(<CalendarView />);
+      renderWithRouter();
 
       expect(screen.getByText("January 2024")).toBeInTheDocument();
     });
 
     it("renders day headers", () => {
-      render(<CalendarView />);
+      renderWithRouter();
 
       expect(screen.getByText("Sun")).toBeInTheDocument();
       expect(screen.getByText("Mon")).toBeInTheDocument();
@@ -117,7 +122,7 @@ describe("CalendarView", () => {
     });
 
     it("displays monthly total P&L", () => {
-      render(<CalendarView />);
+      renderWithRouter();
 
       // 500 + (-200) = $300, shown in header badge
       const pnlBadges = screen.getAllByText("$300");
@@ -125,13 +130,13 @@ describe("CalendarView", () => {
     });
 
     it("calls fetchDailyPerformance on mount", () => {
-      render(<CalendarView />);
+      renderWithRouter();
 
       expect(mockFetchDailyPerformance).toHaveBeenCalled();
     });
 
     it("calls setDateRange on mount", () => {
-      render(<CalendarView />);
+      renderWithRouter();
 
       expect(mockSetDateRange).toHaveBeenCalledWith({
         start: "2024-01-01",
@@ -148,14 +153,10 @@ describe("CalendarView", () => {
         setDateRange: mockSetDateRange,
         isLoading: false,
       });
-      vi.mocked(useTradesStore).mockReturnValue({
-        trades: [],
-        fetchTrades: mockFetchTrades,
-      });
     });
 
     it("navigates to previous month", () => {
-      render(<CalendarView />);
+      renderWithRouter();
 
       fireEvent.click(screen.getByLabelText("Previous month"));
 
@@ -163,7 +164,7 @@ describe("CalendarView", () => {
     });
 
     it("navigates to next month", () => {
-      render(<CalendarView />);
+      renderWithRouter();
 
       fireEvent.click(screen.getByLabelText("Next month"));
 
@@ -179,49 +180,45 @@ describe("CalendarView", () => {
         setDateRange: mockSetDateRange,
         isLoading: false,
       });
-      vi.mocked(useTradesStore).mockReturnValue({
-        trades: [mockTrade],
-        fetchTrades: mockFetchTrades,
+      vi.mocked(tradesApi.getTrades).mockResolvedValue([mockTrade]);
+    });
+
+    it("shows day detail when day is clicked", async () => {
+      vi.useRealTimers();
+      renderWithRouter(["/calendar?date=2024-01-15"]);
+
+      await waitFor(() => {
+        expect(screen.getByText("January 15, 2024")).toBeInTheDocument();
       });
     });
 
-    it("shows day detail when day is clicked", () => {
-      render(<CalendarView />);
+    it("displays trades for selected day", async () => {
+      vi.useRealTimers();
+      renderWithRouter(["/calendar?date=2024-01-15"]);
 
-      // Click on day 15 which has data
-      const day15Button = screen.getByText("$500").closest("button");
-      fireEvent.click(day15Button!);
-
-      expect(screen.getByText("January 15, 2024")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText("AAPL")).toBeInTheDocument();
+        expect(screen.getByText("LONG")).toBeInTheDocument();
+      });
     });
 
-    it("displays trades for selected day", () => {
-      render(<CalendarView />);
+    it("closes day detail on Close click", async () => {
+      vi.useRealTimers();
+      renderWithRouter(["/calendar?date=2024-01-15"]);
 
-      const day15Button = screen.getByText("$500").closest("button");
-      fireEvent.click(day15Button!);
+      await waitFor(() => {
+        expect(screen.getByText("January 15, 2024")).toBeInTheDocument();
+      });
 
-      expect(screen.getByText("AAPL")).toBeInTheDocument();
-      expect(screen.getByText("LONG")).toBeInTheDocument();
-    });
-
-    it("closes day detail on Close click", () => {
-      render(<CalendarView />);
-
-      const day15Button = screen.getByText("$500").closest("button");
-      fireEvent.click(day15Button!);
       fireEvent.click(screen.getByText("Close"));
 
       expect(screen.queryByText("January 15, 2024")).not.toBeInTheDocument();
     });
 
     it("days without trades are disabled", () => {
-      vi.mocked(useTradesStore).mockReturnValue({
-        trades: [],
-        fetchTrades: mockFetchTrades,
-      });
+      vi.mocked(tradesApi.getTrades).mockResolvedValue([]);
 
-      render(<CalendarView />);
+      renderWithRouter();
 
       // Find day buttons - days without trades should be disabled
       const dayButtons = screen.getAllByRole("button");
@@ -245,23 +242,40 @@ describe("CalendarView", () => {
         setDateRange: mockSetDateRange,
         isLoading: false,
       });
-      vi.mocked(useTradesStore).mockReturnValue({
-        trades: [],
-        fetchTrades: mockFetchTrades,
-      });
     });
 
     it("displays positive P&L with formatting", () => {
-      render(<CalendarView />);
+      renderWithRouter();
 
       expect(screen.getByText("$500")).toBeInTheDocument();
     });
 
     it("displays trade count for days with trades", () => {
-      render(<CalendarView />);
+      renderWithRouter();
 
       expect(screen.getByText("3 trades")).toBeInTheDocument();
       expect(screen.getByText("2 trades")).toBeInTheDocument();
+    });
+  });
+
+  describe("selected date persistence", () => {
+    beforeEach(() => {
+      vi.mocked(useMetricsStore).mockReturnValue({
+        dailyPerformance: mockDailyPerformance,
+        fetchDailyPerformance: mockFetchDailyPerformance,
+        setDateRange: mockSetDateRange,
+        isLoading: false,
+      });
+      vi.mocked(tradesApi.getTrades).mockResolvedValue([mockTrade]);
+    });
+
+    it("restores selected date from URL params", async () => {
+      vi.useRealTimers();
+      renderWithRouter(["/calendar?date=2024-01-15"]);
+
+      await waitFor(() => {
+        expect(screen.getByText("January 15, 2024")).toBeInTheDocument();
+      });
     });
   });
 });

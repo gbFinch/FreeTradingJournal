@@ -68,7 +68,13 @@ function getTrades(params?: {
     filtered = filtered.filter((t) => t.trade_date <= params.endDate!);
   }
 
-  return filtered.map(calculateDerivedFields);
+  // Sort by date descending (most recent first)
+  const sorted = [...filtered].sort((a, b) =>
+    b.trade_date.localeCompare(a.trade_date) ||
+    b.created_at.localeCompare(a.created_at)
+  );
+
+  return sorted.map(calculateDerivedFields);
 }
 
 function getTrade(id: string): TradeWithDerived | null {

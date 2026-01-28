@@ -25,6 +25,7 @@ export interface MonthStats {
 export interface MonthlyCalendarProps {
   data: DailyPerformance[];
   month?: Date;
+  selectedDate?: string | null;
   onMonthChange?: (date: Date) => void;
   showNavigation?: boolean;
   showWeeklySummary?: boolean;

@@ -11,6 +11,7 @@ const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export default function MonthlyCalendar({
   data,
   month: controlledMonth,
+  selectedDate,
   onMonthChange,
   showNavigation = true,
   showWeeklySummary = true,
@@ -90,6 +91,7 @@ export default function MonthlyCalendar({
                 <DayCell
                   key={day.date}
                   data={day}
+                  isSelected={selectedDate === day.date}
                   onClick={
                     day.tradeCount > 0 && onDayClick
                       ? () => onDayClick(day.date)

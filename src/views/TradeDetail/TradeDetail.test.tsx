@@ -206,7 +206,7 @@ describe("TradeDetail", () => {
 
       await user.click(screen.getByText("← Back"));
 
-      expect(mockNavigate).toHaveBeenCalledWith("/trades");
+      expect(mockNavigate).toHaveBeenCalledWith(-1);
     });
   });
 

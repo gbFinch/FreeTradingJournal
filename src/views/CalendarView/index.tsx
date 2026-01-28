@@ -1,14 +1,21 @@
 import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
-import { useMetricsStore, useTradesStore } from '@/stores';
+import { useMetricsStore } from '@/stores';
+import { getTrades } from '@/api/trades';
+import type { TradeWithDerived } from '@/types';
 import clsx from 'clsx';
 import MonthlyCalendar from '@/components/MonthlyCalendar';
 
 export default function CalendarView() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [dayTrades, setDayTrades] = useState<TradeWithDerived[]>([]);
   const { dailyPerformance, fetchDailyPerformance, setDateRange, isLoading } = useMetricsStore();
-  const { trades, fetchTrades } = useTradesStore();
+
+  // Get selected date from URL params
+  const selectedDate = searchParams.get('date');
 
   useEffect(() => {
     const start = startOfMonth(currentDate);
@@ -22,20 +29,25 @@ export default function CalendarView() {
 
   useEffect(() => {
     if (selectedDate) {
-      fetchTrades({
-        startDate: selectedDate,
-        endDate: selectedDate,
-      });
+      getTrades({ startDate: selectedDate, endDate: selectedDate })
+        .then(setDayTrades)
+        .catch(() => setDayTrades([]));
+    } else {
+      setDayTrades([]);
     }
-  }, [selectedDate, fetchTrades]);
+  }, [selectedDate]);
 
   const handleMonthChange = (date: Date) => {
     setCurrentDate(date);
-    setSelectedDate(null);
+    setSearchParams({});
   };
 
   const handleDayClick = (date: string) => {
-    setSelectedDate(date);
+    setSearchParams({ date });
+  };
+
+  const handleCloseDetail = () => {
+    setSearchParams({});
   };
 
   return (
@@ -51,6 +63,7 @@ export default function CalendarView() {
           <MonthlyCalendar
             data={dailyPerformance}
             month={currentDate}
+            selectedDate={selectedDate}
             onMonthChange={handleMonthChange}
             onDayClick={handleDayClick}
           />
@@ -63,21 +76,22 @@ export default function CalendarView() {
                   {format(parseISO(selectedDate), 'MMMM d, yyyy')}
                 </h2>
                 <button
-                  onClick={() => setSelectedDate(null)}
+                  onClick={handleCloseDetail}
                   className="text-gray-400 hover:text-gray-300"
                 >
                   Close
                 </button>
               </div>
 
-              {trades.length === 0 ? (
+              {dayTrades.length === 0 ? (
                 <p className="text-gray-400">No trades on this day.</p>
               ) : (
                 <div className="space-y-2">
-                  {trades.map(trade => (
-                    <div
+                  {dayTrades.map(trade => (
+                    <button
                       key={trade.id}
-                      className="flex justify-between items-center p-2 bg-gray-700 rounded"
+                      onClick={() => navigate(`/trades/${trade.id}`)}
+                      className="w-full flex justify-between items-center p-2 bg-gray-700 rounded hover:bg-gray-600 transition-colors cursor-pointer text-left"
                     >
                       <div>
                         <span className="font-medium text-gray-100">{trade.symbol}</span>
@@ -97,7 +111,7 @@ export default function CalendarView() {
                       >
                         ${trade.net_pnl?.toFixed(2) ?? '0.00'}
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}

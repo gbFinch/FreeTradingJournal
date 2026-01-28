@@ -4,10 +4,11 @@ import { formatCurrencyCompact } from './utils';
 
 interface DayCellProps {
   data: DayCellData;
+  isSelected?: boolean;
   onClick?: () => void;
 }
 
-export default function DayCell({ data, onClick }: DayCellProps) {
+export default function DayCell({ data, isSelected, onClick }: DayCellProps) {
   const { dayNumber, isCurrentMonth, pnl, tradeCount, winRate } = data;
   const hasData = tradeCount > 0;
 
@@ -28,7 +29,8 @@ export default function DayCell({ data, onClick }: DayCellProps) {
         getColorClasses(),
         isCurrentMonth ? 'text-gray-100' : 'text-gray-500',
         hasData && 'hover:opacity-90 cursor-pointer',
-        !hasData && 'cursor-default'
+        !hasData && 'cursor-default',
+        isSelected && 'ring-2 ring-blue-400 ring-offset-2 ring-offset-gray-900'
       )}
     >
       {/* Date number */}

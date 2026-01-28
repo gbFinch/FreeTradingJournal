@@ -90,7 +90,7 @@ export default function TradeDetail() {
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/trades')}
+            onClick={() => navigate(-1)}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
             &larr; Back
