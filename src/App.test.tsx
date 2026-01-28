@@ -229,9 +229,9 @@ describe("App", () => {
 
       fireEvent.click(screen.getByRole("link", { name: "Calendar" }));
 
-      // Dashboard and Trades should have inactive styling
-      expect(screen.getByRole("link", { name: "Dashboard" })).toHaveClass("text-gray-300");
-      expect(screen.getByRole("link", { name: "Trades" })).toHaveClass("text-gray-300");
+      // Dashboard and Trades should have inactive styling (text-gray-600 for light mode)
+      expect(screen.getByRole("link", { name: "Dashboard" })).toHaveClass("text-gray-600");
+      expect(screen.getByRole("link", { name: "Trades" })).toHaveClass("text-gray-600");
     });
   });
 });

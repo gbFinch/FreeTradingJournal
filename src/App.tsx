@@ -13,7 +13,7 @@ function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-lg hover:bg-gray-800 transition-colors"
+      className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
       title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       {theme === 'dark' ? (
@@ -35,8 +35,8 @@ interface SidebarProps {
 
 function Sidebar({ onAddTrade }: SidebarProps) {
   return (
-    <aside className="w-64 bg-gray-900 text-white flex flex-col">
-      <div className="p-4 border-b border-gray-800 flex justify-between items-center">
+    <aside className="w-64 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white flex flex-col">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
         <h1 className="text-xl font-bold">Trading Journal</h1>
         <ThemeToggle />
       </div>
@@ -58,7 +58,7 @@ function Sidebar({ onAddTrade }: SidebarProps) {
                 `flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                   isActive
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-800'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'
                 }`
               }
             >
@@ -75,7 +75,7 @@ function Sidebar({ onAddTrade }: SidebarProps) {
                 `flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                   isActive
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-800'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'
                 }`
               }
             >
@@ -92,7 +92,7 @@ function Sidebar({ onAddTrade }: SidebarProps) {
                 `flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                   isActive
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-800'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'
                 }`
               }
             >
@@ -104,7 +104,7 @@ function Sidebar({ onAddTrade }: SidebarProps) {
           </li>
         </ul>
       </nav>
-      <div className="p-4 border-t border-gray-800 text-sm text-gray-500">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-800 text-sm text-gray-500">
         v0.1.0
       </div>
     </aside>
