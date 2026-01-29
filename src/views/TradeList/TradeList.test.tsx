@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import TradeList from "./index";
-import { useTradesStore, useAccountsStore } from "@/stores";
+import { useTradesStore, useAccountsStore, useImportStore } from "@/stores";
 import type { TradeWithDerived } from "@/types";
 
 const mockNavigate = vi.fn();
@@ -14,6 +14,7 @@ vi.mock("react-router-dom", () => ({
 vi.mock("@/stores", () => ({
   useTradesStore: vi.fn(),
   useAccountsStore: vi.fn(),
+  useImportStore: vi.fn(),
 }));
 
 vi.mock("@/components/TradeForm", () => ({
@@ -25,12 +26,17 @@ vi.mock("@/components/TradeForm", () => ({
   ),
 }));
 
+vi.mock("@/components/ImportDialog", () => ({
+  default: () => <div data-testid="import-dialog" />,
+}));
+
 const mockTrade: TradeWithDerived = {
   id: "trade-1",
   user_id: "user-1",
   account_id: "account-1",
   instrument_id: "inst-1",
   symbol: "AAPL",
+  asset_class: "stock",
   trade_number: 1,
   trade_date: "2024-01-15",
   direction: "long",
@@ -71,6 +77,9 @@ describe("TradeList", () => {
     vi.mocked(useAccountsStore).mockReturnValue({
       accounts: [{ id: "acc-1", user_id: "user-1", name: "Main", base_currency: "USD", created_at: "" }],
       selectedAccountId: "acc-1",
+    });
+    vi.mocked(useImportStore).mockReturnValue({
+      openDialog: vi.fn(),
     });
   });
 

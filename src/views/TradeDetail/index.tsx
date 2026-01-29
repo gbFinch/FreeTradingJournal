@@ -95,8 +95,13 @@ export default function TradeDetail() {
           >
             &larr; Back
           </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             {trade.symbol}
+            {trade.asset_class === 'option' && (
+              <span className="px-1.5 py-0.5 text-xs font-semibold bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">
+                OPT
+              </span>
+            )}
           </h1>
           <span
             className={clsx(
@@ -185,6 +190,10 @@ export default function TradeDetail() {
         {/* Input Fields */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Trade Details</h2>
+          <DetailRow
+            label="Asset Type"
+            value={trade.asset_class === 'option' ? 'Option' : 'Stock'}
+          />
           <DetailRow
             label="Date"
             value={format(new Date(trade.trade_date), 'MMMM d, yyyy')}

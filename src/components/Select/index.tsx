@@ -10,9 +10,10 @@ interface SelectProps {
   onChange: (value: string) => void;
   options: Option[];
   className?: string;
+  disabled?: boolean;
 }
 
-export default function Select({ value, onChange, options, className = '' }: SelectProps) {
+export default function Select({ value, onChange, options, className = '', disabled = false }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -33,8 +34,9 @@ export default function Select({ value, onChange, options, className = '' }: Sel
     <div ref={containerRef} className={`relative ${className}`}>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-100 text-left flex justify-between items-center"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+        className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-100 text-left flex justify-between items-center ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         <span>{selectedOption?.label ?? 'Select...'}</span>
         <svg

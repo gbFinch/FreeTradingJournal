@@ -1,6 +1,7 @@
 export type Direction = 'long' | 'short';
 export type Status = 'open' | 'closed';
 export type TradeResult = 'win' | 'loss' | 'breakeven';
+export type AssetClass = 'stock' | 'option';
 
 export interface Trade {
   id: string;
@@ -8,6 +9,7 @@ export interface Trade {
   account_id: string;
   instrument_id: string;
   symbol: string;
+  asset_class: AssetClass;
   trade_number: number | null;
   trade_date: string; // YYYY-MM-DD format
   direction: Direction;
@@ -37,6 +39,7 @@ export interface TradeWithDerived extends Trade {
 export interface CreateTradeInput {
   account_id: string;
   symbol: string;
+  asset_class?: AssetClass;
   trade_number?: number;
   trade_date: string;
   direction: Direction;

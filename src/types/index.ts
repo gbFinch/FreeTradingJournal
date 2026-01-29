@@ -1,6 +1,7 @@
 export * from './trade';
 export * from './metrics';
 export * from './account';
+export * from './import';
 
 export interface DateRange {
   start: string;

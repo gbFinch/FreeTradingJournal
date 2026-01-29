@@ -7,5 +7,5 @@ pub mod metrics;
 pub use user::User;
 pub use account::Account;
 pub use instrument::Instrument;
-pub use trade::{Trade, CreateTradeInput, UpdateTradeInput, TradeWithDerived, DerivedFields, Direction, Status, TradeResult};
+pub use trade::{Trade, CreateTradeInput, UpdateTradeInput, TradeWithDerived, DerivedFields, Direction, Status, TradeResult, AssetClass};
 pub use metrics::{DailyPerformance, PeriodMetrics, EquityPoint};

@@ -24,8 +24,11 @@ export function calculateDerivedFields(trade: Trade): TradeWithDerived {
       ? trade.exit_price - trade.entry_price
       : trade.entry_price - trade.exit_price;
 
+  // Get multiplier based on asset class (100 for options, 1 for stocks)
+  const multiplier = trade.asset_class === 'option' ? 100 : 1;
+
   // Calculate gross and net PnL
-  const gross_pnl = pnl_per_share * trade.quantity;
+  const gross_pnl = pnl_per_share * trade.quantity * multiplier;
   const net_pnl = gross_pnl - trade.fees;
 
   // Calculate risk per share (only if stop_loss_price is set)

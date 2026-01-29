@@ -19,6 +19,7 @@ mod tests {
         CreateTradeInput {
             account_id: account_id.to_string(),
             symbol: "AAPL".to_string(),
+            asset_class: None,
             trade_number: None,
             trade_date: date,
             direction: Direction::Long,
@@ -40,6 +41,7 @@ mod tests {
         CreateTradeInput {
             account_id: account_id.to_string(),
             symbol: "AAPL".to_string(),
+            asset_class: None,
             trade_number: None,
             trade_date: date,
             direction: Direction::Long,

@@ -28,15 +28,87 @@ pub async fn init_db(app_data_dir: PathBuf) -> Result<SqlitePool, sqlx::Error> {
     Ok(pool)
 }
 
-/// Run database migrations
+/// Run database migrations with tracking to avoid re-running
 async fn run_migrations(pool: &SqlitePool) -> Result<(), sqlx::Error> {
-    // Read and execute the migration SQL
-    let migration_sql = include_str!("../../migrations/001_initial_schema.sql");
+    // Create migrations tracking table if it doesn't exist
+    sqlx::raw_sql(
+        "CREATE TABLE IF NOT EXISTS _migrations (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL UNIQUE,
+            applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )"
+    )
+    .execute(pool)
+    .await?;
 
-    sqlx::raw_sql(migration_sql)
-        .execute(pool)
+    // Check for existing databases that had migrations run before tracking was added
+    // If trade_executions table exists but _migrations is empty, mark previous migrations as applied
+    let has_tracking: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM _migrations")
+        .fetch_one(pool)
         .await?;
 
+    if has_tracking == 0 {
+        // Check if trade_executions table exists (from migration 002)
+        let has_executions: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='trade_executions')"
+        )
+        .fetch_one(pool)
+        .await?;
+
+        if has_executions {
+            // Database was migrated before tracking - mark all as applied
+            mark_migration_applied(pool, "001_initial_schema").await?;
+            mark_migration_applied(pool, "002_executions_options").await?;
+            return Ok(());
+        }
+
+        // Check if users table exists (from migration 001)
+        let has_users: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='users')"
+        )
+        .fetch_one(pool)
+        .await?;
+
+        if has_users {
+            // Only migration 001 was applied
+            mark_migration_applied(pool, "001_initial_schema").await?;
+        }
+    }
+
+    // Migration 001: Initial schema
+    if !migration_applied(pool, "001_initial_schema").await? {
+        let migration_001 = include_str!("../../migrations/001_initial_schema.sql");
+        sqlx::raw_sql(migration_001).execute(pool).await?;
+        mark_migration_applied(pool, "001_initial_schema").await?;
+    }
+
+    // Migration 002: Executions and options support
+    if !migration_applied(pool, "002_executions_options").await? {
+        let migration_002 = include_str!("../../migrations/002_executions_options.sql");
+        sqlx::raw_sql(migration_002).execute(pool).await?;
+        mark_migration_applied(pool, "002_executions_options").await?;
+    }
+
+    Ok(())
+}
+
+/// Check if a migration has been applied
+async fn migration_applied(pool: &SqlitePool, name: &str) -> Result<bool, sqlx::Error> {
+    let applied: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM _migrations WHERE name = ?)"
+    )
+    .bind(name)
+    .fetch_one(pool)
+    .await?;
+    Ok(applied)
+}
+
+/// Mark a migration as applied
+async fn mark_migration_applied(pool: &SqlitePool, name: &str) -> Result<(), sqlx::Error> {
+    sqlx::query("INSERT INTO _migrations (name) VALUES (?)")
+        .bind(name)
+        .execute(pool)
+        .await?;
     Ok(())
 }
 

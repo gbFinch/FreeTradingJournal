@@ -1,6 +1,7 @@
 mod calculations;
 mod commands;
 mod models;
+mod parsers;
 mod repository;
 mod services;
 
@@ -19,6 +20,7 @@ pub struct AppState {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let app_handle = app.handle().clone();
 
@@ -61,6 +63,11 @@ pub fn run() {
             commands::get_period_metrics,
             commands::get_all_time_metrics,
             commands::get_equity_curve,
+            // Import commands
+            commands::select_tlg_file,
+            commands::preview_tlg_import,
+            commands::execute_tlg_import,
+            commands::get_trade_executions,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

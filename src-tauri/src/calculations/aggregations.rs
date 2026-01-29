@@ -194,7 +194,7 @@ pub fn calculate_max_drawdown(equity_curve: &[EquityPoint]) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{Direction, Status, Trade};
+    use crate::models::{AssetClass, Direction, Status, Trade};
     use chrono::{NaiveDate, Utc};
 
     fn create_test_trade(net_pnl: f64, result: TradeResult, date: NaiveDate) -> TradeWithDerived {
@@ -204,6 +204,7 @@ mod tests {
             account_id: "account1".to_string(),
             instrument_id: "inst1".to_string(),
             symbol: "AAPL".to_string(),
+            asset_class: AssetClass::Stock,
             trade_number: None,
             trade_date: date,
             direction: Direction::Long,
