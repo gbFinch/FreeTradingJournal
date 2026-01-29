@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { useTradesStore } from '@/stores';
+import { getTradeExecutions } from '@/api/import';
 import TradeForm from '@/components/TradeForm';
 import clsx from 'clsx';
+import type { Execution } from '@/types';
 
 function formatCurrency(value: number | null): string {
   if (value === null) return '-';
@@ -40,6 +42,8 @@ export default function TradeDetail() {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [executions, setExecutions] = useState<Execution[]>([]);
+  const [executionsLoading, setExecutionsLoading] = useState(false);
 
   const { selectedTrade, selectTrade, deleteTrade, fetchTrades, isLoading } = useTradesStore();
 
@@ -51,6 +55,17 @@ export default function TradeDetail() {
       selectTrade(null);
     };
   }, [id, selectTrade]);
+
+  // Fetch executions when trade is loaded
+  useEffect(() => {
+    if (id) {
+      setExecutionsLoading(true);
+      getTradeExecutions(id)
+        .then(setExecutions)
+        .catch(console.error)
+        .finally(() => setExecutionsLoading(false));
+    }
+  }, [id]);
 
   const handleDelete = async () => {
     if (id) {
@@ -84,6 +99,10 @@ export default function TradeDetail() {
   }
 
   const trade = selectedTrade;
+
+  // Separate entries and exits
+  const entries = executions.filter(e => e.execution_type === 'entry');
+  const exits = executions.filter(e => e.execution_type === 'exit');
 
   return (
     <div className="p-6 max-w-3xl">
@@ -260,6 +279,105 @@ export default function TradeDetail() {
           <DetailRow label="R-Multiple" value={formatNumber(trade.r_multiple)} />
         </div>
       </div>
+
+      {/* Executions Section */}
+      {(entries.length > 0 || exits.length > 0) && (
+        <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Executions</h2>
+
+          {executionsLoading ? (
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Loading executions...</p>
+          ) : (
+            <div className="space-y-4">
+              {/* Entries */}
+              {entries.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                    Entries ({entries.length})
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
+                          <th className="pb-2 font-medium">Date</th>
+                          <th className="pb-2 font-medium">Time</th>
+                          <th className="pb-2 font-medium text-right">Qty</th>
+                          <th className="pb-2 font-medium text-right">Price</th>
+                          <th className="pb-2 font-medium text-right">Fees</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {entries.map((exec, i) => (
+                          <tr key={i} className="border-b dark:border-gray-700 last:border-0">
+                            <td className="py-2 dark:text-gray-300">
+                              {format(new Date(exec.execution_date), 'MMM d, yyyy')}
+                            </td>
+                            <td className="py-2 dark:text-gray-300">
+                              {exec.execution_time || '-'}
+                            </td>
+                            <td className="py-2 text-right dark:text-gray-300">
+                              {exec.quantity}
+                            </td>
+                            <td className="py-2 text-right dark:text-gray-300">
+                              ${exec.price.toFixed(2)}
+                            </td>
+                            <td className="py-2 text-right dark:text-gray-300">
+                              ${exec.fees.toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Exits */}
+              {exits.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                    Exits ({exits.length})
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
+                          <th className="pb-2 font-medium">Date</th>
+                          <th className="pb-2 font-medium">Time</th>
+                          <th className="pb-2 font-medium text-right">Qty</th>
+                          <th className="pb-2 font-medium text-right">Price</th>
+                          <th className="pb-2 font-medium text-right">Fees</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {exits.map((exec, i) => (
+                          <tr key={i} className="border-b dark:border-gray-700 last:border-0">
+                            <td className="py-2 dark:text-gray-300">
+                              {format(new Date(exec.execution_date), 'MMM d, yyyy')}
+                            </td>
+                            <td className="py-2 dark:text-gray-300">
+                              {exec.execution_time || '-'}
+                            </td>
+                            <td className="py-2 text-right dark:text-gray-300">
+                              {exec.quantity}
+                            </td>
+                            <td className="py-2 text-right dark:text-gray-300">
+                              ${exec.price.toFixed(2)}
+                            </td>
+                            <td className="py-2 text-right dark:text-gray-300">
+                              ${exec.fees.toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Notes */}
       {trade.notes && (

@@ -93,7 +93,7 @@ impl AssetClass {
     }
 }
 
-/// Exit execution for partial exits
+/// Exit execution for partial exits (input)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExitExecution {
     pub id: Option<String>,
@@ -102,6 +102,19 @@ pub struct ExitExecution {
     pub quantity: f64,
     pub price: f64,
     pub fees: Option<f64>,
+}
+
+/// Stored trade execution (from database)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TradeExecutionRecord {
+    pub id: String,
+    pub trade_id: String,
+    pub execution_type: String,
+    pub execution_date: NaiveDate,
+    pub execution_time: Option<String>,
+    pub quantity: f64,
+    pub price: f64,
+    pub fees: f64,
 }
 
 /// Core trade entity with input fields

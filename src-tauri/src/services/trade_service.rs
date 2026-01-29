@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use sqlx::sqlite::SqlitePool;
 use crate::calculations::calculate_derived_fields;
-use crate::models::{CreateTradeInput, ExitExecution, Status, Trade, TradeWithDerived, UpdateTradeInput};
+use crate::models::{CreateTradeInput, ExitExecution, Status, Trade, TradeWithDerived, UpdateTradeInput, TradeExecutionRecord};
 use crate::repository::{InstrumentRepository, TradeRepository};
 
 pub struct TradeService;
@@ -232,6 +232,16 @@ impl TradeService {
         TradeRepository::delete(pool, id)
             .await
             .map_err(|e| format!("Failed to delete trade: {}", e))
+    }
+
+    /// Get executions for a trade
+    pub async fn get_trade_executions(
+        pool: &SqlitePool,
+        trade_id: &str,
+    ) -> Result<Vec<TradeExecutionRecord>, String> {
+        TradeRepository::get_executions(pool, trade_id)
+            .await
+            .map_err(|e| format!("Failed to get trade executions: {}", e))
     }
 
     /// Add derived fields to a trade

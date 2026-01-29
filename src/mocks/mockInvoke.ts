@@ -384,6 +384,9 @@ export async function mockInvoke<T>(cmd: string, args?: InvokeArgs): Promise<T> 
     case 'delete_trade':
       deleteTrade(args?.id as string);
       return undefined as T;
+    case 'get_trade_executions':
+      // Mock trades don't have executions stored, return empty array
+      return [] as T;
 
     // Metrics
     case 'get_daily_performance':
