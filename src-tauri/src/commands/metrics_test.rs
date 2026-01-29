@@ -275,10 +275,8 @@ mod tests {
             .await
             .unwrap();
 
-        // Should have starting point at $0 even with no trades
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].date, start);
-        assert_eq!(result[0].cumulative_pnl, 0.0);
+        // Empty when no trades
+        assert!(result.is_empty());
     }
 
     #[tokio::test]
@@ -299,15 +297,12 @@ mod tests {
             .await
             .unwrap();
 
-        // Starting point at $0 + 3 trades = 4 points
-        assert_eq!(result.len(), 4);
-        // First point: starting point at date range start with $0
-        assert_eq!(result[0].date, start);
-        assert_eq!(result[0].cumulative_pnl, 0.0);
-        // Equity should accumulate from trades
-        assert_eq!(result[1].cumulative_pnl, 100.0);
-        assert_eq!(result[2].cumulative_pnl, 200.0);
-        assert_eq!(result[3].cumulative_pnl, 300.0);
+        // No trades before start_date, so no $0 starting point (all-time behavior)
+        assert_eq!(result.len(), 3);
+        // Equity should accumulate from first trade
+        assert_eq!(result[0].cumulative_pnl, 100.0);
+        assert_eq!(result[1].cumulative_pnl, 200.0);
+        assert_eq!(result[2].cumulative_pnl, 300.0);
     }
 
     #[tokio::test]
@@ -342,10 +337,41 @@ mod tests {
             .await
             .unwrap();
 
-        // Starting point at $0 + 1 trade = 2 points
-        assert_eq!(result.len(), 2);
+        // No trades before start_date for this account, so no $0 starting point
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].cumulative_pnl, 500.0);
+    }
+
+    #[tokio::test]
+    async fn test_get_equity_curve_filtered_range_starts_at_zero() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        // Create a trade BEFORE the date range we'll query
+        let early_date = NaiveDate::from_ymd_opt(2024, 1, 5).unwrap();
+        let input_early = create_winning_trade(&account_id, early_date, 200.0);
+        TradeService::create_trade(&pool, &user_id, input_early).await.unwrap();
+
+        // Create trades within the date range
+        for day in [15, 16] {
+            let date = NaiveDate::from_ymd_opt(2024, 1, day).unwrap();
+            let input = create_winning_trade(&account_id, date, 100.0);
+            TradeService::create_trade(&pool, &user_id, input).await.unwrap();
+        }
+
+        // Query only Jan 10-31 (excludes the Jan 5 trade)
+        let start = NaiveDate::from_ymd_opt(2024, 1, 10).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 1, 31).unwrap();
+        let result = MetricsService::get_equity_curve(&pool, &user_id, None, start, end)
+            .await
+            .unwrap();
+
+        // Should have $0 starting point + 2 trades = 3 points
+        // Because there's a trade before start_date, this is a filtered view
+        assert_eq!(result.len(), 3);
         assert_eq!(result[0].date, start);
         assert_eq!(result[0].cumulative_pnl, 0.0);
-        assert_eq!(result[1].cumulative_pnl, 500.0);
+        assert_eq!(result[1].cumulative_pnl, 100.0);
+        assert_eq!(result[2].cumulative_pnl, 200.0);
     }
 }

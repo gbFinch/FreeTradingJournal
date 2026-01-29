@@ -79,9 +79,26 @@ impl MetricsService {
 
         let mut curve = calculate_equity_curve_owned(&trades);
 
-        // Prepend a starting point at the beginning of the date range with $0 balance
-        // Only add if there's no trade on the start_date or if the curve is empty
-        let needs_start_point = curve.is_empty() || curve[0].date != start_date;
+        // Check if there are any trades BEFORE start_date
+        // If so, we're viewing a filtered subset and should start from $0
+        // If not, we're viewing "all time" and should start from first trade
+        let has_trades_before_start = TradeService::get_trades(
+            pool,
+            user_id,
+            account_id,
+            None,
+            Some(start_date - chrono::Duration::days(1)),
+        )
+        .await
+        .map(|t| !t.is_empty())
+        .unwrap_or(false);
+
+        // Add $0 starting point only when viewing a filtered range (trades exist before start_date)
+        // and the first trade in range is after start_date
+        let needs_start_point = has_trades_before_start
+            && !curve.is_empty()
+            && curve[0].date > start_date;
+
         if needs_start_point {
             curve.insert(
                 0,
