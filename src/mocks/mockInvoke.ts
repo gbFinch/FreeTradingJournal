@@ -309,8 +309,12 @@ function calculatePeriodMetrics(tradesWithDerived: TradeWithDerived[]): PeriodMe
   };
 }
 
-function getEquityCurve(accountId?: string): EquityPoint[] {
-  const tradesWithDerived = getTrades({ accountId });
+function getEquityCurve(
+  startDate: string,
+  endDate: string,
+  accountId?: string
+): EquityPoint[] {
+  const tradesWithDerived = getTrades({ accountId, startDate, endDate });
   const closedTrades = tradesWithDerived.filter(
     (t) => t.status === 'closed' && t.net_pnl !== null
   );
@@ -404,7 +408,11 @@ export async function mockInvoke<T>(cmd: string, args?: InvokeArgs): Promise<T> 
     case 'get_all_time_metrics':
       return getAllTimeMetrics(args?.accountId as string | undefined) as T;
     case 'get_equity_curve':
-      return getEquityCurve(args?.accountId as string | undefined) as T;
+      return getEquityCurve(
+        args?.startDate as string,
+        args?.endDate as string,
+        args?.accountId as string | undefined
+      ) as T;
 
     default:
       throw new Error(`Unknown command: ${cmd}`);

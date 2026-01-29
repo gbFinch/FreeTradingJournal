@@ -21,6 +21,10 @@ export async function getAllTimeMetrics(accountId?: string): Promise<PeriodMetri
   return invoke('get_all_time_metrics', { accountId });
 }
 
-export async function getEquityCurve(accountId?: string): Promise<EquityPoint[]> {
-  return invoke('get_equity_curve', { accountId });
+export async function getEquityCurve(
+  startDate: string,
+  endDate: string,
+  accountId?: string
+): Promise<EquityPoint[]> {
+  return invoke('get_equity_curve', { startDate, endDate, accountId });
 }

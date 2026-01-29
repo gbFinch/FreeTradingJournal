@@ -140,13 +140,17 @@ describe("useMetricsStore", () => {
   });
 
   describe("fetchEquityCurve", () => {
-    it("fetches equity curve data", async () => {
+    it("fetches equity curve data with date range", async () => {
       vi.mocked(api.getEquityCurve).mockResolvedValue(mockEquityCurve);
 
       await useMetricsStore.getState().fetchEquityCurve();
 
       expect(useMetricsStore.getState().equityCurve).toEqual(mockEquityCurve);
-      expect(api.getEquityCurve).toHaveBeenCalledWith(undefined);
+      expect(api.getEquityCurve).toHaveBeenCalledWith(
+        "2024-06-01",
+        "2024-06-30",
+        undefined
+      );
     });
 
     it("passes accountId when set", async () => {
@@ -155,7 +159,11 @@ describe("useMetricsStore", () => {
 
       await useMetricsStore.getState().fetchEquityCurve();
 
-      expect(api.getEquityCurve).toHaveBeenCalledWith("acc-1");
+      expect(api.getEquityCurve).toHaveBeenCalledWith(
+        "2024-06-01",
+        "2024-06-30",
+        "acc-1"
+      );
     });
 
     it("handles fetch error", async () => {

@@ -143,12 +143,14 @@ describe("metrics API", () => {
   });
 
   describe("getEquityCurve", () => {
-    it("calls invoke with get_equity_curve command", async () => {
+    it("calls invoke with get_equity_curve command and dates", async () => {
       vi.mocked(invoke).mockResolvedValue(mockEquityCurve);
 
-      await getEquityCurve();
+      await getEquityCurve("2024-01-01", "2024-01-31");
 
       expect(invoke).toHaveBeenCalledWith("get_equity_curve", {
+        startDate: "2024-01-01",
+        endDate: "2024-01-31",
         accountId: undefined,
       });
     });
@@ -156,9 +158,11 @@ describe("metrics API", () => {
     it("passes accountId when provided", async () => {
       vi.mocked(invoke).mockResolvedValue(mockEquityCurve);
 
-      await getEquityCurve("acc-1");
+      await getEquityCurve("2024-01-01", "2024-01-31", "acc-1");
 
       expect(invoke).toHaveBeenCalledWith("get_equity_curve", {
+        startDate: "2024-01-01",
+        endDate: "2024-01-31",
         accountId: "acc-1",
       });
     });
@@ -166,7 +170,7 @@ describe("metrics API", () => {
     it("returns equity curve from invoke", async () => {
       vi.mocked(invoke).mockResolvedValue(mockEquityCurve);
 
-      const result = await getEquityCurve();
+      const result = await getEquityCurve("2024-01-01", "2024-01-31");
 
       expect(result).toEqual(mockEquityCurve);
     });

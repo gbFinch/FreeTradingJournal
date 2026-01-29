@@ -100,11 +100,15 @@ export const useMetricsStore = create<MetricsState>((set, get) => ({
   },
 
   fetchEquityCurve: async () => {
-    const { accountId } = get();
+    const { dateRange, accountId } = get();
     set({ isLoading: true, error: null });
 
     try {
-      const data = await api.getEquityCurve(accountId ?? undefined);
+      const data = await api.getEquityCurve(
+        dateRange.start,
+        dateRange.end,
+        accountId ?? undefined
+      );
       set({ equityCurve: data, isLoading: false });
     } catch (error) {
       set({ error: String(error), isLoading: false });
