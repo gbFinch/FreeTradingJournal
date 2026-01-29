@@ -16,6 +16,19 @@ impl TradeService {
         // Validate input (including exits)
         Self::validate_input(&input)?;
 
+        // Validate account exists
+        let account_exists: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM accounts WHERE id = ?)"
+        )
+        .bind(&input.account_id)
+        .fetch_one(pool)
+        .await
+        .map_err(|e| format!("Failed to check account: {}", e))?;
+
+        if !account_exists {
+            return Err(format!("Account not found: {}", input.account_id));
+        }
+
         // Process exits if provided
         let (aggregated_exit_price, aggregated_exit_time, aggregated_fees, computed_status) =
             Self::process_exits(&input)?;
@@ -49,14 +62,15 @@ impl TradeService {
         // Insert trade
         let trade = TradeRepository::insert(pool, user_id, &instrument.id, &processed_input)
             .await
-            .map_err(|e| format!("Failed to create trade: {}", e))?;
+            .map_err(|e| format!("Failed to create trade (user={}, account={}, instrument={}): {}",
+                user_id, input.account_id, instrument.id, e))?;
 
         // Insert exit executions if provided
         if let Some(ref exits) = input.exits {
-            for exit in exits {
+            for (i, exit) in exits.iter().enumerate() {
                 Self::insert_exit_execution(pool, &trade.id, exit)
                     .await
-                    .map_err(|e| format!("Failed to insert exit execution: {}", e))?;
+                    .map_err(|e| format!("Failed to insert exit execution #{}: {}", i + 1, e))?;
             }
         }
 

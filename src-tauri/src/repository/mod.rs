@@ -22,6 +22,11 @@ pub async fn init_db(app_data_dir: PathBuf) -> Result<SqlitePool, sqlx::Error> {
         .connect(&db_url)
         .await?;
 
+    // Enable foreign key enforcement
+    sqlx::query("PRAGMA foreign_keys = ON")
+        .execute(&pool)
+        .await?;
+
     // Run migrations
     run_migrations(&pool).await?;
 
