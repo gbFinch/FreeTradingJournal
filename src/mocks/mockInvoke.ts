@@ -348,6 +348,29 @@ function getEquityCurve(
     });
   }
 
+  // Check if there are trades BEFORE the start date (to match backend behavior)
+  // Only add $0 starting point when viewing a filtered range (not all-time)
+  const allTrades = getTrades({ accountId });
+  const tradesBeforeStart = allTrades.filter(
+    (t) => t.status === 'closed' && t.trade_date < startDate
+  );
+  const hasTradesBeforeStart = tradesBeforeStart.length > 0;
+
+  // Add $0 starting point only when there are trades before start_date
+  // and the first trade in range is after start_date
+  const needsStartPoint =
+    hasTradesBeforeStart &&
+    results.length > 0 &&
+    results[0].date > startDate;
+
+  if (needsStartPoint) {
+    results.unshift({
+      date: startDate,
+      cumulative_pnl: 0,
+      drawdown: 0,
+    });
+  }
+
   return results;
 }
 
