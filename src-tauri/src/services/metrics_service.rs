@@ -77,7 +77,23 @@ impl MetricsService {
         // Sort by date for correct equity curve
         trades.sort_by_key(|t| t.trade.trade_date);
 
-        Ok(calculate_equity_curve_owned(&trades))
+        let mut curve = calculate_equity_curve_owned(&trades);
+
+        // Prepend a starting point at the beginning of the date range with $0 balance
+        // Only add if there's no trade on the start_date or if the curve is empty
+        let needs_start_point = curve.is_empty() || curve[0].date != start_date;
+        if needs_start_point {
+            curve.insert(
+                0,
+                EquityPoint {
+                    date: start_date,
+                    cumulative_pnl: 0.0,
+                    drawdown: 0.0,
+                },
+            );
+        }
+
+        Ok(curve)
     }
 }
 

@@ -275,7 +275,10 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(result.is_empty());
+        // Should have starting point at $0 even with no trades
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].date, start);
+        assert_eq!(result[0].cumulative_pnl, 0.0);
     }
 
     #[tokio::test]
@@ -283,7 +286,7 @@ mod tests {
         let pool = create_test_db().await;
         let (user_id, account_id) = setup_test_user_and_account(&pool).await;
 
-        // Create trades on consecutive days
+        // Create trades on consecutive days (10, 11, 12)
         for day in [10, 11, 12] {
             let date = NaiveDate::from_ymd_opt(2024, 1, day).unwrap();
             let input = create_winning_trade(&account_id, date, 100.0);
@@ -296,11 +299,15 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(result.len(), 3);
-        // Equity should accumulate
-        assert_eq!(result[0].cumulative_pnl, 100.0);
-        assert_eq!(result[1].cumulative_pnl, 200.0);
-        assert_eq!(result[2].cumulative_pnl, 300.0);
+        // Starting point at $0 + 3 trades = 4 points
+        assert_eq!(result.len(), 4);
+        // First point: starting point at date range start with $0
+        assert_eq!(result[0].date, start);
+        assert_eq!(result[0].cumulative_pnl, 0.0);
+        // Equity should accumulate from trades
+        assert_eq!(result[1].cumulative_pnl, 100.0);
+        assert_eq!(result[2].cumulative_pnl, 200.0);
+        assert_eq!(result[3].cumulative_pnl, 300.0);
     }
 
     #[tokio::test]
@@ -335,7 +342,10 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].cumulative_pnl, 500.0);
+        // Starting point at $0 + 1 trade = 2 points
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].date, start);
+        assert_eq!(result[0].cumulative_pnl, 0.0);
+        assert_eq!(result[1].cumulative_pnl, 500.0);
     }
 }

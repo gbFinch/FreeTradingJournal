@@ -348,6 +348,17 @@ function getEquityCurve(
     });
   }
 
+  // Prepend a starting point at the beginning of the date range with $0 balance
+  // Only add if there's no trade on the start date or if results is empty
+  const needsStartPoint = results.length === 0 || results[0].date !== startDate;
+  if (needsStartPoint) {
+    results.unshift({
+      date: startDate,
+      cumulative_pnl: 0,
+      drawdown: 0,
+    });
+  }
+
   return results;
 }
 
