@@ -57,13 +57,22 @@ impl MetricsService {
         Ok(calculate_period_metrics(&trades))
     }
 
-    /// Get equity curve
+    /// Get equity curve for a date range
     pub async fn get_equity_curve(
         pool: &SqlitePool,
         user_id: &str,
         account_id: Option<&str>,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
     ) -> Result<Vec<EquityPoint>, String> {
-        let mut trades = TradeService::get_trades(pool, user_id, account_id, None, None).await?;
+        let mut trades = TradeService::get_trades(
+            pool,
+            user_id,
+            account_id,
+            Some(start_date),
+            Some(end_date),
+        )
+        .await?;
 
         // Sort by date for correct equity curve
         trades.sort_by_key(|t| t.trade.trade_date);
@@ -441,7 +450,9 @@ mod tests {
         .await
         .unwrap();
 
-        let curve = MetricsService::get_equity_curve(&pool, &user_id, None)
+        let start = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 1, 31).unwrap();
+        let curve = MetricsService::get_equity_curve(&pool, &user_id, None, start, end)
             .await
             .expect("Failed to get equity curve");
 

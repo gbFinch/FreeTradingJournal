@@ -269,7 +269,9 @@ mod tests {
         let pool = create_test_db().await;
         let (user_id, _account_id) = setup_test_user_and_account(&pool).await;
 
-        let result = MetricsService::get_equity_curve(&pool, &user_id, None)
+        let start = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 12, 31).unwrap();
+        let result = MetricsService::get_equity_curve(&pool, &user_id, None, start, end)
             .await
             .unwrap();
 
@@ -288,7 +290,9 @@ mod tests {
             TradeService::create_trade(&pool, &user_id, input).await.unwrap();
         }
 
-        let result = MetricsService::get_equity_curve(&pool, &user_id, None)
+        let start = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 1, 31).unwrap();
+        let result = MetricsService::get_equity_curve(&pool, &user_id, None, start, end)
             .await
             .unwrap();
 
@@ -325,7 +329,9 @@ mod tests {
         TradeService::create_trade(&pool, &user_id, input2).await.unwrap();
 
         // Get equity curve for first account only
-        let result = MetricsService::get_equity_curve(&pool, &user_id, Some(&account_id))
+        let start = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 1, 31).unwrap();
+        let result = MetricsService::get_equity_curve(&pool, &user_id, Some(&account_id), start, end)
             .await
             .unwrap();
 
