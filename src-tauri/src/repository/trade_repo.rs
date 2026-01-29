@@ -295,6 +295,7 @@ mod tests {
             strategy: None,
             notes: None,
             status: None, // Should default to Closed
+            exits: None,
         };
 
         let trade = TradeRepository::insert(&pool, &user_id, &instrument.id, &input)
@@ -719,6 +720,7 @@ mod tests {
             strategy: None,
             notes: None,
             status: Some(Status::Closed),
+            exits: None,
         };
 
         let trade = TradeRepository::insert(&pool, &user_id, &instrument.id, &input)

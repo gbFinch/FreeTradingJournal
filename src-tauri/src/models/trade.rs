@@ -93,6 +93,17 @@ impl AssetClass {
     }
 }
 
+/// Exit execution for partial exits
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExitExecution {
+    pub id: Option<String>,
+    pub exit_date: NaiveDate,
+    pub exit_time: Option<String>,
+    pub quantity: f64,
+    pub price: f64,
+    pub fees: Option<f64>,
+}
+
 /// Core trade entity with input fields
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Trade {
@@ -176,6 +187,7 @@ pub struct CreateTradeInput {
     pub strategy: Option<String>,
     pub notes: Option<String>,
     pub status: Option<Status>,
+    pub exits: Option<Vec<ExitExecution>>,
 }
 
 /// Input for updating an existing trade

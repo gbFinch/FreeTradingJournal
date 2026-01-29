@@ -171,6 +171,7 @@ mod tests {
             strategy: None,
             notes: None,
             status: Some(Status::Closed),
+            exits: None,
         };
 
         let created = TradeService::create_trade(&pool, &user_id, input).await.unwrap();
@@ -226,6 +227,7 @@ mod tests {
             strategy: None,
             notes: None,
             status: Some(Status::Closed),
+            exits: None,
         };
 
         let result = TradeService::create_trade(&pool, &user_id, input).await;
@@ -255,6 +257,7 @@ mod tests {
             strategy: None,
             notes: None,
             status: Some(Status::Closed),
+            exits: None,
         };
 
         let result = TradeService::create_trade(&pool, &user_id, input).await;
@@ -284,6 +287,7 @@ mod tests {
             strategy: None,
             notes: None,
             status: Some(Status::Closed),
+            exits: None,
         };
 
         let result = TradeService::create_trade(&pool, &user_id, input).await;
@@ -463,6 +467,7 @@ mod tests {
             strategy: None,
             notes: None,
             status: Some(Status::Closed),
+            exits: None,
         };
 
         let created = TradeService::create_trade(&pool, &user_id, input).await.unwrap();

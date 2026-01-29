@@ -67,14 +67,19 @@ describe("TradeForm", () => {
       expect(screen.getByPlaceholderText("AAPL")).toBeInTheDocument();
       expect(screen.getByPlaceholderText("100")).toBeInTheDocument();
       expect(screen.getByPlaceholderText("150.00")).toBeInTheDocument();
-      expect(screen.getByPlaceholderText("155.00")).toBeInTheDocument();
       expect(screen.getByPlaceholderText("148.00")).toBeInTheDocument();
       expect(screen.getByPlaceholderText("0.00")).toBeInTheDocument();
       expect(screen.getByPlaceholderText("Breakout")).toBeInTheDocument();
       expect(screen.getByPlaceholderText("Trade notes...")).toBeInTheDocument();
       // Custom Select components - check default values are shown
       expect(screen.getByText("Long")).toBeInTheDocument();
-      expect(screen.getByText("Closed")).toBeInTheDocument();
+      // Status is now auto-computed (shown as Open initially since no exits)
+      expect(screen.getByText("Open")).toBeInTheDocument();
+      expect(screen.getByText("(auto)")).toBeInTheDocument();
+      // Exits section
+      expect(screen.getByText("Exits")).toBeInTheDocument();
+      expect(screen.getByText("+ Add Exit")).toBeInTheDocument();
+      expect(screen.getByText("No exits added (position is open)")).toBeInTheDocument();
     });
 
     it("shows Create Trade button", () => {
@@ -181,11 +186,13 @@ describe("TradeForm", () => {
 
       expect(screen.getByDisplayValue("AAPL")).toBeInTheDocument();
       expect(screen.getByDisplayValue("150")).toBeInTheDocument();
-      expect(screen.getByDisplayValue("160")).toBeInTheDocument();
-      expect(screen.getByDisplayValue("100")).toBeInTheDocument();
+      // Quantity appears twice (entry qty and exit qty are both 100)
+      expect(screen.getAllByDisplayValue("100")).toHaveLength(2);
       expect(screen.getByDisplayValue("2")).toBeInTheDocument();
       expect(screen.getByDisplayValue("momentum")).toBeInTheDocument();
       expect(screen.getByDisplayValue("Good setup")).toBeInTheDocument();
+      // Exit is pre-populated in the exits section
+      expect(screen.getByDisplayValue("160")).toBeInTheDocument();
     });
 
     it("shows Update Trade button", () => {
@@ -289,8 +296,8 @@ describe("TradeForm", () => {
     });
   });
 
-  describe("status selection", () => {
-    it("allows selecting open status", async () => {
+  describe("exits section", () => {
+    it("adds exit when Add Exit button is clicked", async () => {
       const user = userEvent.setup();
       render(
         <TradeForm
@@ -300,13 +307,96 @@ describe("TradeForm", () => {
         />
       );
 
-      // Click on Status dropdown to open it
-      await user.click(screen.getByText("Closed"));
-      // Select Open option
-      await user.click(screen.getByText("Open"));
+      await user.click(screen.getByText("+ Add Exit"));
 
-      // Verify Open is now selected
-      expect(screen.getByText("Open")).toBeInTheDocument();
+      // Should show exit input fields
+      expect(screen.getByPlaceholderText("50")).toBeInTheDocument(); // Qty placeholder
+      expect(screen.getByPlaceholderText("155.00")).toBeInTheDocument(); // Price placeholder
+      // Should no longer show "No exits added" message
+      expect(screen.queryByText("No exits added (position is open)")).not.toBeInTheDocument();
+    });
+
+    it("auto-calculates status as closed when fully exited", async () => {
+      const user = userEvent.setup();
+      render(
+        <TradeForm
+          defaultAccountId="acc-1"
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      // Enter quantity
+      await user.type(screen.getByPlaceholderText("100"), "100");
+
+      // Add exit
+      await user.click(screen.getByText("+ Add Exit"));
+      await user.type(screen.getByPlaceholderText("50"), "100"); // Exit all 100
+      await user.type(screen.getByPlaceholderText("155.00"), "155");
+
+      // Status should show as Closed
+      expect(screen.getByText("Closed")).toBeInTheDocument();
+    });
+
+    it("shows warning when exit quantity exceeds entry", async () => {
+      const user = userEvent.setup();
+      render(
+        <TradeForm
+          defaultAccountId="acc-1"
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      // Enter quantity
+      await user.type(screen.getByPlaceholderText("100"), "50");
+
+      // Add exit with more shares than entry
+      await user.click(screen.getByText("+ Add Exit"));
+      await user.type(screen.getByPlaceholderText("50"), "100"); // 100 > 50 entry
+      await user.type(screen.getByPlaceholderText("155.00"), "155");
+
+      // Should show warning
+      expect(screen.getByText(/exit quantity.*exceeds entry quantity/i)).toBeInTheDocument();
+    });
+
+    it("submits trade with exits", async () => {
+      const user = userEvent.setup();
+      mockCreateTrade.mockResolvedValue(mockTrade);
+
+      render(
+        <TradeForm
+          defaultAccountId="acc-1"
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      // Fill in basic fields
+      await user.type(screen.getByPlaceholderText("AAPL"), "TSLA");
+      await user.type(screen.getByPlaceholderText("100"), "100");
+      await user.type(screen.getByPlaceholderText("150.00"), "200");
+
+      // Add exit
+      await user.click(screen.getByText("+ Add Exit"));
+      await user.type(screen.getByPlaceholderText("50"), "100");
+      await user.type(screen.getByPlaceholderText("155.00"), "220");
+
+      await user.click(screen.getByText("Create Trade"));
+
+      expect(mockCreateTrade).toHaveBeenCalledWith(
+        expect.objectContaining({
+          symbol: "TSLA",
+          entry_price: 200,
+          quantity: 100,
+          exits: expect.arrayContaining([
+            expect.objectContaining({
+              quantity: 100,
+              price: 220,
+            }),
+          ]),
+        })
+      );
     });
   });
 });
