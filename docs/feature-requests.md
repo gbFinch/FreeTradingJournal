@@ -4,3 +4,4 @@
 4. In daily p&l calendar in dashboard when there are trades the date number is missing. Move date number to the right left corner of the date box - [Done]
 5. Make Daily P&L widget look like the calendar tab - [Done]
 6. Redesign dashboard metrics with visual indicators (charts, gauges) - [Done]
+7. Add partial exits support to trade modal - [Done]
