@@ -1,5 +1,4 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { useAccountsStore, useThemeStore, useTradesStore, useMetricsStore, useSidebarStore } from "@/stores";
@@ -32,8 +31,8 @@ vi.mock("@/components/TradeForm", () => ({
   default: () => <div data-testid="trade-form">Trade Form</div>,
 }));
 
-// Helper to render App with custom initial route
-function renderWithRouter(initialRoute = "/") {
+// Helper to render App
+function renderWithRouter() {
   // We need to render without BrowserRouter since App includes it
   // Instead, we'll test the components that App renders
   return render(<App />);

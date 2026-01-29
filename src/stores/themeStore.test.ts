@@ -91,7 +91,7 @@ describe("useThemeStore", () => {
 
   describe("toggleTheme", () => {
     it("toggles from light to dark", async () => {
-      localStorageMock.getItem.mockReturnValue(null);
+      localStorageMock.getItem.mockReturnValue(null as unknown as string);
       const { useThemeStore } = await import("./themeStore");
       expect(useThemeStore.getState().theme).toBe("light");
 

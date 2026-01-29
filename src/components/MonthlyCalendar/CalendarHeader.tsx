@@ -17,7 +17,6 @@ export default function CalendarHeader({
   stats,
   onPrevMonth,
   onNextMonth,
-  onThisMonth,
   showNavigation = true,
 }: CalendarHeaderProps) {
   const isCurrentMonth = isSameMonth(month, new Date());

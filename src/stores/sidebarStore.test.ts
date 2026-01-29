@@ -56,7 +56,7 @@ describe("useSidebarStore", () => {
 
   describe("toggleCollapsed", () => {
     it("toggles from expanded to collapsed", async () => {
-      localStorageMock.getItem.mockReturnValue(null);
+      localStorageMock.getItem.mockReturnValue(null as unknown as string);
       const { useSidebarStore } = await import("./sidebarStore");
       expect(useSidebarStore.getState().isCollapsed).toBe(false);
 
@@ -84,7 +84,7 @@ describe("useSidebarStore", () => {
     });
 
     it("persists state across multiple toggles", async () => {
-      localStorageMock.getItem.mockReturnValue(null);
+      localStorageMock.getItem.mockReturnValue(null as unknown as string);
       const { useSidebarStore } = await import("./sidebarStore");
 
       useSidebarStore.getState().toggleCollapsed();
