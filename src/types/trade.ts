@@ -3,6 +3,15 @@ export type Status = 'open' | 'closed';
 export type TradeResult = 'win' | 'loss' | 'breakeven';
 export type AssetClass = 'stock' | 'option';
 
+export interface ExitExecution {
+  id?: string;
+  exit_date: string;
+  exit_time?: string;
+  quantity: number;
+  price: number;
+  fees?: number;
+}
+
 export interface Trade {
   id: string;
   user_id: string;
@@ -53,6 +62,7 @@ export interface CreateTradeInput {
   strategy?: string;
   notes?: string;
   status?: Status;
+  exits?: ExitExecution[];
 }
 
 export interface UpdateTradeInput {

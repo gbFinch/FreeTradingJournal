@@ -33,6 +33,7 @@ mod tests {
             strategy: None,
             notes: None,
             status: Some(Status::Closed),
+            exits: None,
         }
     }
 
@@ -55,6 +56,7 @@ mod tests {
             strategy: None,
             notes: None,
             status: Some(Status::Closed),
+            exits: None,
         }
     }
 

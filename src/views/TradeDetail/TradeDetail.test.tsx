@@ -25,6 +25,10 @@ vi.mock("@/components/TradeForm", () => ({
   ),
 }));
 
+vi.mock("@/api/import", () => ({
+  getTradeExecutions: vi.fn().mockResolvedValue([]),
+}));
+
 const mockTrade: TradeWithDerived = {
   id: "trade-1",
   user_id: "user-1",

@@ -72,6 +72,7 @@ pub fn create_test_trade_input(account_id: &str, symbol: &str) -> CreateTradeInp
         strategy: Some("momentum".to_string()),
         notes: Some("Test trade".to_string()),
         status: Some(Status::Closed),
+        exits: None,
     }
 }
 
@@ -101,6 +102,7 @@ pub fn create_losing_long_trade(
         strategy: None,
         notes: None,
         status: Some(Status::Closed),
+        exits: None,
     }
 }
 
@@ -129,5 +131,6 @@ pub fn create_open_trade(
         strategy: None,
         notes: None,
         status: Some(Status::Open),
+        exits: None,
     }
 }

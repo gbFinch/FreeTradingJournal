@@ -104,6 +104,7 @@ mod tests {
             strategy: None,
             notes: None,
             status: Some(Status::Closed),
+            exits: None,
         }
     }
 
@@ -558,6 +559,7 @@ mod tests {
             strategy: None,
             notes: None,
             status: Some(Status::Open),
+            exits: None,
         };
         TradeService::create_trade(&pool, &user_id, open_input)
             .await

@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use sqlx::sqlite::SqlitePool;
 use crate::calculations::calculate_derived_fields;
-use crate::models::{CreateTradeInput, Status, Trade, TradeWithDerived, UpdateTradeInput};
+use crate::models::{CreateTradeInput, ExitExecution, Status, Trade, TradeWithDerived, UpdateTradeInput, TradeExecutionRecord};
 use crate::repository::{InstrumentRepository, TradeRepository};
 
 pub struct TradeService;
@@ -13,25 +13,152 @@ impl TradeService {
         user_id: &str,
         input: CreateTradeInput,
     ) -> Result<TradeWithDerived, String> {
-        // Validate input
+        // Validate input (including exits)
         Self::validate_input(&input)?;
+
+        // Validate account exists
+        let account_exists: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM accounts WHERE id = ?)"
+        )
+        .bind(&input.account_id)
+        .fetch_one(pool)
+        .await
+        .map_err(|e| format!("Failed to check account: {}", e))?;
+
+        if !account_exists {
+            return Err(format!("Account not found: {}", input.account_id));
+        }
+
+        // Process exits if provided
+        let (aggregated_exit_price, aggregated_exit_time, aggregated_fees, computed_status) =
+            Self::process_exits(&input)?;
+
+        // Build modified input with aggregated values
+        let mut processed_input = input.clone();
+        if let Some(exit_price) = aggregated_exit_price {
+            processed_input.exit_price = Some(exit_price);
+        }
+        if let Some(exit_time) = aggregated_exit_time {
+            processed_input.exit_time = Some(exit_time);
+        }
+        if let Some(exit_fees) = aggregated_fees {
+            // Add exit fees to existing fees
+            let base_fees = processed_input.fees.unwrap_or(0.0);
+            processed_input.fees = Some(base_fees + exit_fees);
+        }
+        if let Some(status) = computed_status {
+            processed_input.status = Some(status);
+        }
 
         // Get or create instrument with asset class
         let instrument = InstrumentRepository::get_or_create_with_asset_class(
             pool,
-            &input.symbol,
-            input.asset_class,
+            &processed_input.symbol,
+            processed_input.asset_class,
         )
         .await
         .map_err(|e| format!("Failed to get/create instrument: {}", e))?;
 
         // Insert trade
-        let trade = TradeRepository::insert(pool, user_id, &instrument.id, &input)
+        let trade = TradeRepository::insert(pool, user_id, &instrument.id, &processed_input)
             .await
-            .map_err(|e| format!("Failed to create trade: {}", e))?;
+            .map_err(|e| format!("Failed to create trade (user={}, account={}, instrument={}): {}",
+                user_id, input.account_id, instrument.id, e))?;
+
+        // Insert exit executions if provided
+        if let Some(ref exits) = input.exits {
+            for (i, exit) in exits.iter().enumerate() {
+                Self::insert_exit_execution(pool, &trade.id, exit)
+                    .await
+                    .map_err(|e| format!("Failed to insert exit execution #{}: {}", i + 1, e))?;
+            }
+        }
 
         // Calculate derived fields
         Ok(Self::with_derived_fields(trade))
+    }
+
+    /// Process exits to calculate aggregated values
+    fn process_exits(input: &CreateTradeInput) -> Result<(Option<f64>, Option<String>, Option<f64>, Option<Status>), String> {
+        let exits = match &input.exits {
+            Some(exits) if !exits.is_empty() => exits,
+            _ => return Ok((None, None, None, None)),
+        };
+
+        let entry_qty = input.quantity.unwrap_or(0.0);
+        let total_exit_qty: f64 = exits.iter().map(|e| e.quantity).sum();
+
+        // Validate exit quantity doesn't exceed entry quantity
+        if entry_qty > 0.0 && total_exit_qty > entry_qty {
+            return Err(format!(
+                "Total exit quantity ({}) cannot exceed entry quantity ({})",
+                total_exit_qty, entry_qty
+            ));
+        }
+
+        // Calculate weighted average exit price
+        let weighted_sum: f64 = exits.iter().map(|e| e.price * e.quantity).sum();
+        let avg_exit_price = if total_exit_qty > 0.0 {
+            weighted_sum / total_exit_qty
+        } else {
+            0.0
+        };
+
+        // Get latest exit time for the trade's exit_time field
+        let latest_exit_time = exits.iter()
+            .filter_map(|e| e.exit_time.as_ref())
+            .max()
+            .cloned();
+
+        // Sum all exit fees
+        let total_exit_fees: f64 = exits.iter()
+            .filter_map(|e| e.fees)
+            .sum();
+
+        // Determine status: closed if fully exited, open otherwise
+        let status = if entry_qty > 0.0 && (total_exit_qty - entry_qty).abs() < 0.0001 {
+            Some(Status::Closed)
+        } else if total_exit_qty > 0.0 && total_exit_qty < entry_qty {
+            Some(Status::Open)
+        } else {
+            None
+        };
+
+        Ok((
+            Some(avg_exit_price),
+            latest_exit_time,
+            if total_exit_fees > 0.0 { Some(total_exit_fees) } else { None },
+            status,
+        ))
+    }
+
+    /// Insert an exit execution into the database
+    async fn insert_exit_execution(
+        pool: &SqlitePool,
+        trade_id: &str,
+        exit: &ExitExecution,
+    ) -> Result<(), sqlx::Error> {
+        let id = uuid::Uuid::new_v4().to_string();
+
+        sqlx::query(
+            r#"
+            INSERT INTO trade_executions (
+                id, trade_id, execution_type, execution_date, execution_time,
+                quantity, price, fees
+            ) VALUES (?, ?, 'exit', ?, ?, ?, ?, ?)
+            "#
+        )
+        .bind(&id)
+        .bind(trade_id)
+        .bind(exit.exit_date)
+        .bind(&exit.exit_time)
+        .bind(exit.quantity)
+        .bind(exit.price)
+        .bind(exit.fees.unwrap_or(0.0))
+        .execute(pool)
+        .await?;
+
+        Ok(())
     }
 
     /// Get a trade by ID with derived fields
@@ -121,6 +248,16 @@ impl TradeService {
             .map_err(|e| format!("Failed to delete trade: {}", e))
     }
 
+    /// Get executions for a trade
+    pub async fn get_trade_executions(
+        pool: &SqlitePool,
+        trade_id: &str,
+    ) -> Result<Vec<TradeExecutionRecord>, String> {
+        TradeRepository::get_executions(pool, trade_id)
+            .await
+            .map_err(|e| format!("Failed to get trade executions: {}", e))
+    }
+
     /// Add derived fields to a trade
     fn with_derived_fields(trade: Trade) -> TradeWithDerived {
         let derived = calculate_derived_fields(&trade);
@@ -157,6 +294,23 @@ impl TradeService {
             }
         }
 
+        // Validate exits if provided
+        if let Some(ref exits) = input.exits {
+            for (i, exit) in exits.iter().enumerate() {
+                if exit.quantity <= 0.0 {
+                    return Err(format!("Exit {} quantity must be greater than 0", i + 1));
+                }
+                if exit.price <= 0.0 {
+                    return Err(format!("Exit {} price must be greater than 0", i + 1));
+                }
+                if let Some(fees) = exit.fees {
+                    if fees < 0.0 {
+                        return Err(format!("Exit {} fees cannot be negative", i + 1));
+                    }
+                }
+            }
+        }
+
         Ok(())
     }
 }
@@ -184,6 +338,7 @@ mod tests {
             strategy: Some("momentum".to_string()),
             notes: None,
             status: Some(Status::Closed),
+            exits: None,
         }
     }
 
@@ -328,6 +483,7 @@ mod tests {
             strategy: None,
             notes: None,
             status: None,
+            exits: None,
         };
         assert!(TradeService::validate_input(&input).is_ok());
     }
@@ -393,6 +549,7 @@ mod integration_tests {
             strategy: None,
             notes: None,
             status: Some(Status::Closed),
+            exits: None,
         };
 
         let trade = TradeService::create_trade(&pool, &user_id, input)
@@ -432,6 +589,7 @@ mod integration_tests {
             strategy: None,
             notes: None,
             status: Some(Status::Closed),
+            exits: None,
         };
 
         let trade = TradeService::create_trade(&pool, &user_id, input)
@@ -488,6 +646,7 @@ mod integration_tests {
             strategy: None,
             notes: None,
             status: Some(Status::Closed),
+            exits: None,
         };
 
         let trade = TradeService::create_trade(&pool, &user_id, input)
@@ -524,6 +683,7 @@ mod integration_tests {
             strategy: None,
             notes: None,
             status: Some(Status::Closed),
+            exits: None,
         };
 
         let trade = TradeService::create_trade(&pool, &user_id, input)
@@ -772,5 +932,316 @@ mod integration_tests {
         assert!(trade.gross_pnl.is_none());
         assert!(trade.net_pnl.is_none());
         assert!(trade.result.is_none());
+    }
+
+    // ==================== PARTIAL EXITS TESTS ====================
+
+    #[tokio::test]
+    async fn test_create_trade_with_single_exit() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = CreateTradeInput {
+            account_id: account_id.clone(),
+            symbol: "AAPL".to_string(),
+            asset_class: None,
+            trade_number: None,
+            trade_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            direction: Direction::Long,
+            quantity: Some(100.0),
+            entry_price: 100.0,
+            exit_price: None, // Will be set by exits
+            stop_loss_price: None,
+            entry_time: None,
+            exit_time: None,
+            fees: Some(5.0), // Entry fees
+            strategy: None,
+            notes: None,
+            status: None,
+            exits: Some(vec![ExitExecution {
+                id: None,
+                exit_date: NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
+                exit_time: Some("10:30".to_string()),
+                quantity: 100.0,
+                price: 110.0,
+                fees: Some(5.0),
+            }]),
+        };
+
+        let trade = TradeService::create_trade(&pool, &user_id, input)
+            .await
+            .expect("Failed to create trade");
+
+        // Exit price should be the single exit's price
+        assert_eq!(trade.trade.exit_price, Some(110.0));
+        // Status should be closed (fully exited)
+        assert_eq!(trade.trade.status, Status::Closed);
+        // Fees should include both entry and exit fees
+        assert_eq!(trade.trade.fees, 10.0);
+        // Gross PnL: (110 - 100) * 100 = 1000
+        assert!((trade.gross_pnl.unwrap() - 1000.0).abs() < 0.01);
+        // Net PnL: 1000 - 10 = 990
+        assert!((trade.net_pnl.unwrap() - 990.0).abs() < 0.01);
+        assert_eq!(trade.result, Some(TradeResult::Win));
+    }
+
+    #[tokio::test]
+    async fn test_create_trade_with_multiple_exits_weighted_avg() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = CreateTradeInput {
+            account_id: account_id.clone(),
+            symbol: "MSFT".to_string(),
+            asset_class: None,
+            trade_number: None,
+            trade_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            direction: Direction::Long,
+            quantity: Some(100.0),
+            entry_price: 100.0,
+            exit_price: None,
+            stop_loss_price: None,
+            entry_time: None,
+            exit_time: None,
+            fees: Some(0.0),
+            strategy: None,
+            notes: None,
+            status: None,
+            exits: Some(vec![
+                ExitExecution {
+                    id: None,
+                    exit_date: NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
+                    exit_time: None,
+                    quantity: 60.0,  // 60 shares at $110
+                    price: 110.0,
+                    fees: None,
+                },
+                ExitExecution {
+                    id: None,
+                    exit_date: NaiveDate::from_ymd_opt(2024, 1, 3).unwrap(),
+                    exit_time: None,
+                    quantity: 40.0,  // 40 shares at $115
+                    price: 115.0,
+                    fees: None,
+                },
+            ]),
+        };
+
+        let trade = TradeService::create_trade(&pool, &user_id, input)
+            .await
+            .expect("Failed to create trade");
+
+        // Weighted average: (60*110 + 40*115) / 100 = (6600 + 4600) / 100 = 112
+        assert!((trade.trade.exit_price.unwrap() - 112.0).abs() < 0.01);
+        // Status should be closed (100 out of 100 exited)
+        assert_eq!(trade.trade.status, Status::Closed);
+        // Gross PnL: (112 - 100) * 100 = 1200
+        assert!((trade.gross_pnl.unwrap() - 1200.0).abs() < 0.01);
+    }
+
+    #[tokio::test]
+    async fn test_create_trade_partial_exit_remains_open() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = CreateTradeInput {
+            account_id: account_id.clone(),
+            symbol: "TSLA".to_string(),
+            asset_class: None,
+            trade_number: None,
+            trade_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            direction: Direction::Long,
+            quantity: Some(100.0),
+            entry_price: 200.0,
+            exit_price: None,
+            stop_loss_price: None,
+            entry_time: None,
+            exit_time: None,
+            fees: None,
+            strategy: None,
+            notes: None,
+            status: None,
+            exits: Some(vec![ExitExecution {
+                id: None,
+                exit_date: NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
+                exit_time: None,
+                quantity: 50.0,  // Only 50 out of 100
+                price: 210.0,
+                fees: None,
+            }]),
+        };
+
+        let trade = TradeService::create_trade(&pool, &user_id, input)
+            .await
+            .expect("Failed to create trade");
+
+        // Status should be open (50 out of 100 exited)
+        assert_eq!(trade.trade.status, Status::Open);
+        assert_eq!(trade.trade.exit_price, Some(210.0));
+    }
+
+    #[tokio::test]
+    async fn test_create_trade_exits_exceed_quantity_error() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = CreateTradeInput {
+            account_id: account_id.clone(),
+            symbol: "NVDA".to_string(),
+            asset_class: None,
+            trade_number: None,
+            trade_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            direction: Direction::Long,
+            quantity: Some(100.0),
+            entry_price: 500.0,
+            exit_price: None,
+            stop_loss_price: None,
+            entry_time: None,
+            exit_time: None,
+            fees: None,
+            strategy: None,
+            notes: None,
+            status: None,
+            exits: Some(vec![ExitExecution {
+                id: None,
+                exit_date: NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
+                exit_time: None,
+                quantity: 150.0,  // 150 exceeds entry quantity of 100
+                price: 510.0,
+                fees: None,
+            }]),
+        };
+
+        let result = TradeService::create_trade(&pool, &user_id, input).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("exit quantity"));
+    }
+
+    #[tokio::test]
+    async fn test_create_trade_exit_validation_zero_quantity() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = CreateTradeInput {
+            account_id: account_id.clone(),
+            symbol: "AMD".to_string(),
+            asset_class: None,
+            trade_number: None,
+            trade_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            direction: Direction::Long,
+            quantity: Some(100.0),
+            entry_price: 150.0,
+            exit_price: None,
+            stop_loss_price: None,
+            entry_time: None,
+            exit_time: None,
+            fees: None,
+            strategy: None,
+            notes: None,
+            status: None,
+            exits: Some(vec![ExitExecution {
+                id: None,
+                exit_date: NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
+                exit_time: None,
+                quantity: 0.0,  // Invalid
+                price: 155.0,
+                fees: None,
+            }]),
+        };
+
+        let result = TradeService::create_trade(&pool, &user_id, input).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Exit 1 quantity must be greater than 0"));
+    }
+
+    #[tokio::test]
+    async fn test_create_trade_exit_validation_zero_price() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = CreateTradeInput {
+            account_id: account_id.clone(),
+            symbol: "META".to_string(),
+            asset_class: None,
+            trade_number: None,
+            trade_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            direction: Direction::Long,
+            quantity: Some(100.0),
+            entry_price: 300.0,
+            exit_price: None,
+            stop_loss_price: None,
+            entry_time: None,
+            exit_time: None,
+            fees: None,
+            strategy: None,
+            notes: None,
+            status: None,
+            exits: Some(vec![ExitExecution {
+                id: None,
+                exit_date: NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
+                exit_time: None,
+                quantity: 100.0,
+                price: 0.0,  // Invalid
+                fees: None,
+            }]),
+        };
+
+        let result = TradeService::create_trade(&pool, &user_id, input).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Exit 1 price must be greater than 0"));
+    }
+
+    #[tokio::test]
+    async fn test_create_trade_exit_fees_aggregated() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let input = CreateTradeInput {
+            account_id: account_id.clone(),
+            symbol: "GOOGL".to_string(),
+            asset_class: None,
+            trade_number: None,
+            trade_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            direction: Direction::Long,
+            quantity: Some(100.0),
+            entry_price: 100.0,
+            exit_price: None,
+            stop_loss_price: None,
+            entry_time: None,
+            exit_time: None,
+            fees: Some(5.0), // Entry fees
+            strategy: None,
+            notes: None,
+            status: None,
+            exits: Some(vec![
+                ExitExecution {
+                    id: None,
+                    exit_date: NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
+                    exit_time: None,
+                    quantity: 50.0,
+                    price: 110.0,
+                    fees: Some(2.0),
+                },
+                ExitExecution {
+                    id: None,
+                    exit_date: NaiveDate::from_ymd_opt(2024, 1, 3).unwrap(),
+                    exit_time: None,
+                    quantity: 50.0,
+                    price: 110.0,
+                    fees: Some(3.0),
+                },
+            ]),
+        };
+
+        let trade = TradeService::create_trade(&pool, &user_id, input)
+            .await
+            .expect("Failed to create trade");
+
+        // Total fees: 5 (entry) + 2 + 3 (exits) = 10
+        assert_eq!(trade.trade.fees, 10.0);
+        // Gross PnL: (110 - 100) * 100 = 1000
+        assert!((trade.gross_pnl.unwrap() - 1000.0).abs() < 0.01);
+        // Net PnL: 1000 - 10 = 990
+        assert!((trade.net_pnl.unwrap() - 990.0).abs() < 0.01);
     }
 }

@@ -1,7 +1,7 @@
 use chrono::{NaiveDate, Utc};
 use sqlx::sqlite::SqlitePool;
 use sqlx::Row;
-use crate::models::{Direction, Status, Trade, CreateTradeInput, UpdateTradeInput, AssetClass};
+use crate::models::{Direction, Status, Trade, CreateTradeInput, UpdateTradeInput, AssetClass, TradeExecutionRecord};
 
 pub struct TradeRepository;
 
@@ -205,6 +205,33 @@ impl TradeRepository {
         Ok(())
     }
 
+    /// Get executions for a trade
+    pub async fn get_executions(pool: &SqlitePool, trade_id: &str) -> Result<Vec<TradeExecutionRecord>, sqlx::Error> {
+        let rows = sqlx::query(
+            r#"
+            SELECT id, trade_id, execution_type, execution_date, execution_time,
+                   quantity, price, fees
+            FROM trade_executions
+            WHERE trade_id = ?
+            ORDER BY execution_date ASC, execution_time ASC
+            "#
+        )
+        .bind(trade_id)
+        .fetch_all(pool)
+        .await?;
+
+        Ok(rows.iter().map(|row| TradeExecutionRecord {
+            id: row.get("id"),
+            trade_id: row.get("trade_id"),
+            execution_type: row.get("execution_type"),
+            execution_date: row.get("execution_date"),
+            execution_time: row.get("execution_time"),
+            quantity: row.get("quantity"),
+            price: row.get("price"),
+            fees: row.get("fees"),
+        }).collect())
+    }
+
     /// Convert a database row to Trade struct
     fn row_to_trade(row: &sqlx::sqlite::SqliteRow) -> Trade {
         Trade {
@@ -295,6 +322,7 @@ mod tests {
             strategy: None,
             notes: None,
             status: None, // Should default to Closed
+            exits: None,
         };
 
         let trade = TradeRepository::insert(&pool, &user_id, &instrument.id, &input)
@@ -719,6 +747,7 @@ mod tests {
             strategy: None,
             notes: None,
             status: Some(Status::Closed),
+            exits: None,
         };
 
         let trade = TradeRepository::insert(&pool, &user_id, &instrument.id, &input)
