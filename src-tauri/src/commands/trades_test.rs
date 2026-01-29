@@ -157,6 +157,7 @@ mod tests {
         let input = CreateTradeInput {
             account_id: account_id.clone(),
             symbol: "AAPL".to_string(),
+            asset_class: None,
             trade_number: Some(1),
             trade_date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
             direction: Direction::Long,
@@ -211,6 +212,7 @@ mod tests {
         let input = CreateTradeInput {
             account_id: account_id.clone(),
             symbol: "AAPL".to_string(),
+            asset_class: None,
             trade_number: None,
             trade_date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
             direction: Direction::Long,
@@ -239,6 +241,7 @@ mod tests {
         let input = CreateTradeInput {
             account_id: account_id.clone(),
             symbol: "AAPL".to_string(),
+            asset_class: None,
             trade_number: None,
             trade_date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
             direction: Direction::Long,
@@ -267,6 +270,7 @@ mod tests {
         let input = CreateTradeInput {
             account_id: account_id.clone(),
             symbol: "AAPL".to_string(),
+            asset_class: None,
             trade_number: None,
             trade_date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
             direction: Direction::Long,
@@ -445,6 +449,7 @@ mod tests {
         let input = CreateTradeInput {
             account_id: account_id.clone(),
             symbol: "AAPL".to_string(),
+            asset_class: None,
             trade_number: Some(1),
             trade_date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
             direction: Direction::Long,

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { useTradesStore, useAccountsStore } from '@/stores';
+import { useTradesStore, useAccountsStore, useImportStore } from '@/stores';
 import TradeForm from '@/components/TradeForm';
+import ImportDialog from '@/components/ImportDialog';
 import clsx from 'clsx';
 import type { TradeWithDerived } from '@/types';
 
@@ -29,7 +30,16 @@ function TradeRow({ trade, onClick }: TradeRowProps) {
       <td className="px-4 py-3 whitespace-nowrap">
         {format(new Date(trade.trade_date), 'MMM d, yyyy')}
       </td>
-      <td className="px-4 py-3 whitespace-nowrap font-medium">{trade.symbol}</td>
+      <td className="px-4 py-3 whitespace-nowrap font-medium">
+        <span className="flex items-center gap-1.5">
+          {trade.symbol}
+          {trade.asset_class === 'option' && (
+            <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">
+              OPT
+            </span>
+          )}
+        </span>
+      </td>
       <td className="px-4 py-3 whitespace-nowrap">
         <span
           className={clsx(
@@ -88,6 +98,7 @@ export default function TradeList() {
   const [showForm, setShowForm] = useState(false);
   const { trades, fetchTrades, isLoading } = useTradesStore();
   const { accounts, selectedAccountId } = useAccountsStore();
+  const { openDialog: openImportDialog } = useImportStore();
 
   useEffect(() => {
     fetchTrades();
@@ -99,12 +110,20 @@ export default function TradeList() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Trades</h1>
-        <button
-          onClick={() => setShowForm(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          + New Trade
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={openImportDialog}
+            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            Import
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            + New Trade
+          </button>
+        </div>
       </div>
 
       {/* Trade Form Modal */}
@@ -188,6 +207,9 @@ export default function TradeList() {
           </table>
         </div>
       )}
+
+      {/* Import Dialog */}
+      <ImportDialog />
     </div>
   );
 }

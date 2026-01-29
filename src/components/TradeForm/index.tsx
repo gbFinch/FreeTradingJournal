@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { useTradesStore } from '@/stores';
 import Select from '@/components/Select';
-import type { TradeWithDerived, CreateTradeInput, UpdateTradeInput, Direction, Status } from '@/types';
+import type { TradeWithDerived, CreateTradeInput, UpdateTradeInput, Direction, Status, AssetClass } from '@/types';
 
 interface TradeFormProps {
   trade?: TradeWithDerived;
@@ -15,6 +15,7 @@ export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel
   const { createTrade, updateTrade, isLoading } = useTradesStore();
 
   const [symbol, setSymbol] = useState(trade?.symbol ?? '');
+  const [assetClass, setAssetClass] = useState<AssetClass>(trade?.asset_class ?? 'stock');
   const [tradeDate, setTradeDate] = useState(
     trade?.trade_date ?? format(new Date(), 'yyyy-MM-dd')
   );
@@ -55,6 +56,7 @@ export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel
         const input: CreateTradeInput = {
           account_id: defaultAccountId,
           symbol,
+          asset_class: assetClass,
           trade_date: tradeDate,
           direction,
           quantity: quantity ? parseFloat(quantity) : undefined,
@@ -85,7 +87,14 @@ export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Symbol *
+            <span className="flex items-center gap-2">
+              Symbol *
+              {trade?.asset_class === 'option' && (
+                <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">
+                  OPT
+                </span>
+              )}
+            </span>
           </label>
           <input
             type="text"
@@ -94,6 +103,21 @@ export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-100"
             placeholder="AAPL"
             required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Asset Type
+          </label>
+          <Select
+            value={assetClass}
+            onChange={(value) => setAssetClass(value as AssetClass)}
+            options={[
+              { value: 'stock', label: 'Stock' },
+              { value: 'option', label: 'Option' },
+            ]}
+            disabled={!!trade}
           />
         </div>
 

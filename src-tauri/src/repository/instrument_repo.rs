@@ -1,7 +1,7 @@
 use chrono::Utc;
 use sqlx::sqlite::SqlitePool;
 use sqlx::Row;
-use crate::models::Instrument;
+use crate::models::{AssetClass, Instrument};
 
 pub struct InstrumentRepository;
 
@@ -10,6 +10,15 @@ impl InstrumentRepository {
     pub async fn get_or_create(
         pool: &SqlitePool,
         symbol: &str,
+    ) -> Result<Instrument, sqlx::Error> {
+        Self::get_or_create_with_asset_class(pool, symbol, None).await
+    }
+
+    /// Get an instrument by symbol with a specific asset class, creating it if it doesn't exist
+    pub async fn get_or_create_with_asset_class(
+        pool: &SqlitePool,
+        symbol: &str,
+        asset_class: Option<AssetClass>,
     ) -> Result<Instrument, sqlx::Error> {
         // Try to find existing instrument
         if let Some(instrument) = Self::get_by_symbol(pool, symbol).await? {
@@ -20,12 +29,14 @@ impl InstrumentRepository {
         let id = uuid::Uuid::new_v4().to_string();
         let now = Utc::now();
         let symbol_upper = symbol.to_uppercase();
+        let asset_class_str = asset_class.unwrap_or(AssetClass::Stock).as_str();
 
         sqlx::query(
-            "INSERT INTO instruments (id, symbol, asset_class, created_at) VALUES (?, ?, 'stock', ?)"
+            "INSERT INTO instruments (id, symbol, asset_class, created_at) VALUES (?, ?, ?, ?)"
         )
         .bind(&id)
         .bind(&symbol_upper)
+        .bind(asset_class_str)
         .bind(now)
         .execute(pool)
         .await?;
@@ -153,5 +164,53 @@ mod tests {
             .expect("Query failed");
 
         assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_get_or_create_with_asset_class_option() {
+        let pool = create_test_db().await;
+
+        let instrument = InstrumentRepository::get_or_create_with_asset_class(
+            &pool,
+            "AAPL240315C00150000",
+            Some(AssetClass::Option),
+        )
+        .await
+        .expect("Failed to create option instrument");
+
+        assert_eq!(instrument.symbol, "AAPL240315C00150000");
+        assert_eq!(instrument.asset_class, "option");
+    }
+
+    #[tokio::test]
+    async fn test_get_or_create_with_asset_class_stock() {
+        let pool = create_test_db().await;
+
+        let instrument = InstrumentRepository::get_or_create_with_asset_class(
+            &pool,
+            "NVDA",
+            Some(AssetClass::Stock),
+        )
+        .await
+        .expect("Failed to create stock instrument");
+
+        assert_eq!(instrument.symbol, "NVDA");
+        assert_eq!(instrument.asset_class, "stock");
+    }
+
+    #[tokio::test]
+    async fn test_get_or_create_with_asset_class_none_defaults_to_stock() {
+        let pool = create_test_db().await;
+
+        let instrument = InstrumentRepository::get_or_create_with_asset_class(
+            &pool,
+            "META",
+            None,
+        )
+        .await
+        .expect("Failed to create instrument");
+
+        assert_eq!(instrument.symbol, "META");
+        assert_eq!(instrument.asset_class, "stock");
     }
 }

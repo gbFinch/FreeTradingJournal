@@ -25,6 +25,7 @@ const mockTrade: TradeWithDerived = {
   account_id: "account-1",
   instrument_id: "inst-1",
   symbol: "AAPL",
+  asset_class: "stock",
   trade_number: 1,
   trade_date: "2024-01-15",
   direction: "long",

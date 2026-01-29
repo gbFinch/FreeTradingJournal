@@ -14,11 +14,17 @@ pub async fn create_test_db() -> SqlitePool {
         .expect("Failed to create test database");
 
     // Run migrations
-    let migration_sql = include_str!("../migrations/001_initial_schema.sql");
-    sqlx::raw_sql(migration_sql)
+    let migration_001 = include_str!("../migrations/001_initial_schema.sql");
+    sqlx::raw_sql(migration_001)
         .execute(&pool)
         .await
-        .expect("Failed to run migrations");
+        .expect("Failed to run migration 001");
+
+    let migration_002 = include_str!("../migrations/002_executions_options.sql");
+    sqlx::raw_sql(migration_002)
+        .execute(&pool)
+        .await
+        .expect("Failed to run migration 002");
 
     pool
 }
@@ -52,6 +58,7 @@ pub fn create_test_trade_input(account_id: &str, symbol: &str) -> CreateTradeInp
     CreateTradeInput {
         account_id: account_id.to_string(),
         symbol: symbol.to_string(),
+        asset_class: None,
         trade_number: Some(1),
         trade_date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
         direction: Direction::Long,
@@ -80,6 +87,7 @@ pub fn create_losing_long_trade(
     CreateTradeInput {
         account_id: account_id.to_string(),
         symbol: symbol.to_string(),
+        asset_class: None,
         trade_number: None,
         trade_date: date,
         direction: Direction::Long,
@@ -107,6 +115,7 @@ pub fn create_open_trade(
     CreateTradeInput {
         account_id: account_id.to_string(),
         symbol: symbol.to_string(),
+        asset_class: None,
         trade_number: None,
         trade_date: date,
         direction: Direction::Long,

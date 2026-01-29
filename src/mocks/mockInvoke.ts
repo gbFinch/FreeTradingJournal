@@ -89,6 +89,7 @@ function createTrade(input: CreateTradeInput): TradeWithDerived {
     account_id: input.account_id,
     instrument_id: input.symbol,
     symbol: input.symbol,
+    asset_class: 'stock', // Default to stock for manually created trades
     trade_number: input.trade_number ?? null,
     trade_date: input.trade_date,
     direction: input.direction,

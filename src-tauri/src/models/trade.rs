@@ -60,6 +60,39 @@ pub enum TradeResult {
     Breakeven,
 }
 
+/// Asset class for the trade
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AssetClass {
+    Stock,
+    Option,
+}
+
+impl AssetClass {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            AssetClass::Stock => "stock",
+            AssetClass::Option => "option",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s.to_lowercase().as_str() {
+            "stock" => Some(AssetClass::Stock),
+            "option" => Some(AssetClass::Option),
+            _ => None,
+        }
+    }
+
+    /// Returns the contract multiplier for this asset class
+    pub fn multiplier(&self) -> f64 {
+        match self {
+            AssetClass::Stock => 1.0,
+            AssetClass::Option => 100.0,
+        }
+    }
+}
+
 /// Core trade entity with input fields
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Trade {
@@ -68,6 +101,7 @@ pub struct Trade {
     pub account_id: String,
     pub instrument_id: String,
     pub symbol: String, // Denormalized for convenience
+    pub asset_class: AssetClass, // From instrument
     pub trade_number: Option<i32>,
     pub trade_date: NaiveDate,
     pub direction: Direction,
@@ -128,6 +162,7 @@ impl TradeWithDerived {
 pub struct CreateTradeInput {
     pub account_id: String,
     pub symbol: String,
+    pub asset_class: Option<AssetClass>,
     pub trade_number: Option<i32>,
     pub trade_date: NaiveDate,
     pub direction: Direction,

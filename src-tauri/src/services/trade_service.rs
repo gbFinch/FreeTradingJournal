@@ -16,10 +16,14 @@ impl TradeService {
         // Validate input
         Self::validate_input(&input)?;
 
-        // Get or create instrument
-        let instrument = InstrumentRepository::get_or_create(pool, &input.symbol)
-            .await
-            .map_err(|e| format!("Failed to get/create instrument: {}", e))?;
+        // Get or create instrument with asset class
+        let instrument = InstrumentRepository::get_or_create_with_asset_class(
+            pool,
+            &input.symbol,
+            input.asset_class,
+        )
+        .await
+        .map_err(|e| format!("Failed to get/create instrument: {}", e))?;
 
         // Insert trade
         let trade = TradeRepository::insert(pool, user_id, &instrument.id, &input)
@@ -166,6 +170,7 @@ mod tests {
         CreateTradeInput {
             account_id: "acc1".to_string(),
             symbol: "AAPL".to_string(),
+            asset_class: None,
             trade_number: Some(1),
             trade_date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
             direction: Direction::Long,
@@ -309,6 +314,7 @@ mod tests {
         let input = CreateTradeInput {
             account_id: "acc1".to_string(),
             symbol: "TSLA".to_string(),
+            asset_class: None,
             trade_number: None,
             trade_date: NaiveDate::from_ymd_opt(2024, 6, 1).unwrap(),
             direction: Direction::Short,
@@ -373,6 +379,7 @@ mod integration_tests {
         let input = CreateTradeInput {
             account_id: account_id.clone(),
             symbol: "MSFT".to_string(),
+            asset_class: None,
             trade_number: None,
             trade_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
             direction: Direction::Long,
@@ -411,6 +418,7 @@ mod integration_tests {
         let input = CreateTradeInput {
             account_id: account_id.clone(),
             symbol: "TSLA".to_string(),
+            asset_class: None,
             trade_number: None,
             trade_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
             direction: Direction::Short,
@@ -466,6 +474,7 @@ mod integration_tests {
         let input = CreateTradeInput {
             account_id: account_id.clone(),
             symbol: "META".to_string(),
+            asset_class: None,
             trade_number: None,
             trade_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
             direction: Direction::Long,
@@ -488,6 +497,46 @@ mod integration_tests {
         assert_eq!(trade.gross_pnl, Some(0.0));
         assert_eq!(trade.net_pnl, Some(0.0));
         assert_eq!(trade.result, Some(TradeResult::Breakeven));
+    }
+
+    #[tokio::test]
+    async fn test_create_option_trade_with_multiplier() {
+        use crate::models::AssetClass;
+
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        // Create an option trade: 5 contracts, entry $1.50, exit $2.00
+        let input = CreateTradeInput {
+            account_id: account_id.clone(),
+            symbol: "AAPL240315C00150000".to_string(),
+            asset_class: Some(AssetClass::Option),
+            trade_number: None,
+            trade_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            direction: Direction::Long,
+            quantity: Some(5.0), // 5 contracts
+            entry_price: 1.50,
+            exit_price: Some(2.00),
+            stop_loss_price: None,
+            entry_time: None,
+            exit_time: None,
+            fees: Some(8.0),
+            strategy: None,
+            notes: None,
+            status: Some(Status::Closed),
+        };
+
+        let trade = TradeService::create_trade(&pool, &user_id, input)
+            .await
+            .expect("Failed to create option trade");
+
+        // Option PnL with 100x multiplier:
+        // Gross: (2.00 - 1.50) * 5 * 100 = 250
+        assert!((trade.gross_pnl.unwrap() - 250.0).abs() < 0.01);
+        // Net: 250 - 8 = 242
+        assert!((trade.net_pnl.unwrap() - 242.0).abs() < 0.01);
+        assert_eq!(trade.result, Some(TradeResult::Win));
+        assert_eq!(trade.trade.asset_class, AssetClass::Option);
     }
 
     #[tokio::test]

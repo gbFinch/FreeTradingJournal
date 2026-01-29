@@ -1,7 +1,7 @@
 use chrono::{NaiveDate, Utc};
 use sqlx::sqlite::SqlitePool;
 use sqlx::Row;
-use crate::models::{Direction, Status, Trade, CreateTradeInput, UpdateTradeInput};
+use crate::models::{Direction, Status, Trade, CreateTradeInput, UpdateTradeInput, AssetClass};
 
 pub struct TradeRepository;
 
@@ -60,7 +60,7 @@ impl TradeRepository {
     pub async fn get_by_id(pool: &SqlitePool, id: &str) -> Result<Option<Trade>, sqlx::Error> {
         let row = sqlx::query(
             r#"
-            SELECT t.*, i.symbol
+            SELECT t.*, i.symbol, i.asset_class
             FROM trades t
             JOIN instruments i ON t.instrument_id = i.id
             WHERE t.id = ?
@@ -84,7 +84,7 @@ impl TradeRepository {
     ) -> Result<Vec<Trade>, sqlx::Error> {
         let mut query = String::from(
             r#"
-            SELECT t.*, i.symbol
+            SELECT t.*, i.symbol, i.asset_class
             FROM trades t
             JOIN instruments i ON t.instrument_id = i.id
             WHERE t.user_id = ?
@@ -213,6 +213,9 @@ impl TradeRepository {
             account_id: row.get("account_id"),
             instrument_id: row.get("instrument_id"),
             symbol: row.get("symbol"),
+            asset_class: row.get::<Option<&str>, _>("asset_class")
+                .and_then(AssetClass::from_str)
+                .unwrap_or(AssetClass::Stock),
             trade_number: row.get("trade_number"),
             trade_date: row.get("trade_date"),
             direction: Direction::from_str(row.get::<&str, _>("direction")).unwrap_or(Direction::Long),
@@ -278,6 +281,7 @@ mod tests {
         let input = CreateTradeInput {
             account_id: account_id.clone(),
             symbol: "MSFT".to_string(),
+            asset_class: None,
             trade_number: None,
             trade_date: NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
             direction: Direction::Short,
@@ -701,6 +705,7 @@ mod tests {
         let input = CreateTradeInput {
             account_id: account_id.clone(),
             symbol: "TSLA".to_string(),
+            asset_class: None,
             trade_number: None,
             trade_date: NaiveDate::from_ymd_opt(2024, 2, 1).unwrap(),
             direction: Direction::Short,
