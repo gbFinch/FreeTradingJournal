@@ -44,6 +44,7 @@ describe("useMetricsStore", () => {
       equityCurve: [],
       dateRange: { start: "2024-06-01", end: "2024-06-30" },
       periodType: "month",
+      selectedMonth: new Date("2024-06-15"),
       accountId: null,
       isLoading: false,
       error: null,
@@ -199,6 +200,17 @@ describe("useMetricsStore", () => {
       expect(state.dateRange.end).toBe("2024-06-30");
     });
 
+    it("resets selectedMonth to current month when switching to month period", () => {
+      // Set to a different month first
+      useMetricsStore.setState({ selectedMonth: new Date("2024-03-15") });
+
+      useMetricsStore.getState().setPeriodType("month");
+
+      const state = useMetricsStore.getState();
+      expect(state.selectedMonth.getMonth()).toBe(5); // June (0-indexed)
+      expect(state.selectedMonth.getFullYear()).toBe(2024);
+    });
+
     it("sets ytd period with correct date range", () => {
       useMetricsStore.getState().setPeriodType("ytd");
 
@@ -215,6 +227,62 @@ describe("useMetricsStore", () => {
       expect(state.periodType).toBe("all");
       expect(state.dateRange.start).toBe("2000-01-01");
       expect(state.dateRange.end).toBe("2024-06-15");
+    });
+  });
+
+  describe("setSelectedMonth", () => {
+    it("sets selected month and updates date range", () => {
+      useMetricsStore.getState().setSelectedMonth(new Date("2024-03-15"));
+
+      const state = useMetricsStore.getState();
+      expect(state.selectedMonth.getMonth()).toBe(2); // March
+      expect(state.dateRange.start).toBe("2024-03-01");
+      expect(state.dateRange.end).toBe("2024-03-31");
+      expect(state.periodType).toBe("month");
+    });
+  });
+
+  describe("goToPrevMonth", () => {
+    it("navigates to previous month", () => {
+      useMetricsStore.getState().goToPrevMonth();
+
+      const state = useMetricsStore.getState();
+      expect(state.selectedMonth.getMonth()).toBe(4); // May (prev from June)
+      expect(state.dateRange.start).toBe("2024-05-01");
+      expect(state.dateRange.end).toBe("2024-05-31");
+      expect(state.periodType).toBe("month");
+    });
+
+    it("handles year boundary correctly", () => {
+      useMetricsStore.setState({ selectedMonth: new Date("2024-01-15") });
+
+      useMetricsStore.getState().goToPrevMonth();
+
+      const state = useMetricsStore.getState();
+      expect(state.selectedMonth.getMonth()).toBe(11); // December
+      expect(state.selectedMonth.getFullYear()).toBe(2023);
+    });
+  });
+
+  describe("goToNextMonth", () => {
+    it("navigates to next month", () => {
+      useMetricsStore.getState().goToNextMonth();
+
+      const state = useMetricsStore.getState();
+      expect(state.selectedMonth.getMonth()).toBe(6); // July (next from June)
+      expect(state.dateRange.start).toBe("2024-07-01");
+      expect(state.dateRange.end).toBe("2024-07-31");
+      expect(state.periodType).toBe("month");
+    });
+
+    it("handles year boundary correctly", () => {
+      useMetricsStore.setState({ selectedMonth: new Date("2024-12-15") });
+
+      useMetricsStore.getState().goToNextMonth();
+
+      const state = useMetricsStore.getState();
+      expect(state.selectedMonth.getMonth()).toBe(0); // January
+      expect(state.selectedMonth.getFullYear()).toBe(2025);
     });
   });
 

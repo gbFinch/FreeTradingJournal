@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { format, startOfMonth, endOfMonth, startOfYear } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfYear, addMonths, subMonths } from 'date-fns';
 import type { DailyPerformance, PeriodMetrics, EquityPoint, DateRange } from '@/types';
 import * as api from '@/api';
 
@@ -11,6 +11,7 @@ interface MetricsState {
   equityCurve: EquityPoint[];
   dateRange: DateRange;
   periodType: PeriodType;
+  selectedMonth: Date;
   accountId: string | null;
   isLoading: boolean;
   error: string | null;
@@ -21,18 +22,21 @@ interface MetricsState {
   fetchAll: () => Promise<void>;
   setDateRange: (range: DateRange) => void;
   setPeriodType: (type: PeriodType) => void;
+  setSelectedMonth: (month: Date) => void;
+  goToPrevMonth: () => void;
+  goToNextMonth: () => void;
   setAccountId: (id: string | null) => void;
   clearError: () => void;
 }
 
-function getDateRangeForPeriod(type: PeriodType): DateRange {
+function getDateRangeForPeriod(type: PeriodType, selectedMonth: Date): DateRange {
   const today = new Date();
 
   switch (type) {
     case 'month':
       return {
-        start: format(startOfMonth(today), 'yyyy-MM-dd'),
-        end: format(endOfMonth(today), 'yyyy-MM-dd'),
+        start: format(startOfMonth(selectedMonth), 'yyyy-MM-dd'),
+        end: format(endOfMonth(selectedMonth), 'yyyy-MM-dd'),
       };
     case 'ytd':
       return {
@@ -46,8 +50,8 @@ function getDateRangeForPeriod(type: PeriodType): DateRange {
       };
     default:
       return {
-        start: format(startOfMonth(today), 'yyyy-MM-dd'),
-        end: format(endOfMonth(today), 'yyyy-MM-dd'),
+        start: format(startOfMonth(selectedMonth), 'yyyy-MM-dd'),
+        end: format(endOfMonth(selectedMonth), 'yyyy-MM-dd'),
       };
   }
 }
@@ -56,8 +60,9 @@ export const useMetricsStore = create<MetricsState>((set, get) => ({
   dailyPerformance: [],
   periodMetrics: null,
   equityCurve: [],
-  dateRange: getDateRangeForPeriod('month'),
+  dateRange: getDateRangeForPeriod('month', new Date()),
   periodType: 'month',
+  selectedMonth: new Date(),
   accountId: null,
   isLoading: false,
   error: null,
@@ -129,8 +134,30 @@ export const useMetricsStore = create<MetricsState>((set, get) => ({
   },
 
   setPeriodType: (type: PeriodType) => {
-    const dateRange = getDateRangeForPeriod(type);
-    set({ periodType: type, dateRange });
+    const { selectedMonth } = get();
+    // When switching to month view, reset to current month
+    const month = type === 'month' ? new Date() : selectedMonth;
+    const dateRange = getDateRangeForPeriod(type, month);
+    set({ periodType: type, dateRange, selectedMonth: month });
+  },
+
+  setSelectedMonth: (month: Date) => {
+    const dateRange = getDateRangeForPeriod('month', month);
+    set({ selectedMonth: month, periodType: 'month', dateRange });
+  },
+
+  goToPrevMonth: () => {
+    const { selectedMonth } = get();
+    const newMonth = subMonths(selectedMonth, 1);
+    const dateRange = getDateRangeForPeriod('month', newMonth);
+    set({ selectedMonth: newMonth, periodType: 'month', dateRange });
+  },
+
+  goToNextMonth: () => {
+    const { selectedMonth } = get();
+    const newMonth = addMonths(selectedMonth, 1);
+    const dateRange = getDateRangeForPeriod('month', newMonth);
+    set({ selectedMonth: newMonth, periodType: 'month', dateRange });
   },
 
   setAccountId: (id: string | null) => {
