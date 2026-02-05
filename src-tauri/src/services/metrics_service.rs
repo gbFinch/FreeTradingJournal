@@ -505,6 +505,68 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_equity_curve_aggregates_same_day_trades() {
+        let pool = create_test_db().await;
+        let (user_id, account_id) = setup_test_user_and_account(&pool).await;
+
+        let day1 = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let day2 = NaiveDate::from_ymd_opt(2024, 1, 2).unwrap();
+
+        // Create 3 trades on day 1: +1000, +500, -200 = +1300 total
+        TradeService::create_trade(
+            &pool,
+            &user_id,
+            create_trade_input(&account_id, day1, 100.0, 110.0, 100.0, 0.0), // +1000
+        )
+        .await
+        .unwrap();
+
+        TradeService::create_trade(
+            &pool,
+            &user_id,
+            create_trade_input(&account_id, day1, 100.0, 105.0, 100.0, 0.0), // +500
+        )
+        .await
+        .unwrap();
+
+        TradeService::create_trade(
+            &pool,
+            &user_id,
+            create_trade_input(&account_id, day1, 100.0, 98.0, 100.0, 0.0), // -200
+        )
+        .await
+        .unwrap();
+
+        // Create 1 trade on day 2: -500
+        TradeService::create_trade(
+            &pool,
+            &user_id,
+            create_trade_input(&account_id, day2, 100.0, 95.0, 100.0, 0.0), // -500
+        )
+        .await
+        .unwrap();
+
+        let start = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 1, 31).unwrap();
+        let curve = MetricsService::get_equity_curve(&pool, &user_id, None, start, end)
+            .await
+            .expect("Failed to get equity curve");
+
+        // Should have exactly 2 points (one per day), not 4 (one per trade)
+        assert_eq!(curve.len(), 2);
+
+        // Day 1: cumulative = 1300, peak = 1300, drawdown = 0
+        assert_eq!(curve[0].date, day1);
+        assert!((curve[0].cumulative_pnl - 1300.0).abs() < 0.01);
+        assert!((curve[0].drawdown - 0.0).abs() < 0.01);
+
+        // Day 2: cumulative = 800, peak = 1300, drawdown = 500
+        assert_eq!(curve[1].date, day2);
+        assert!((curve[1].cumulative_pnl - 800.0).abs() < 0.01);
+        assert!((curve[1].drawdown - 500.0).abs() < 0.01);
+    }
+
+    #[tokio::test]
     async fn test_max_drawdown() {
         let pool = create_test_db().await;
         let (user_id, account_id) = setup_test_user_and_account(&pool).await;

@@ -154,24 +154,35 @@ pub fn calculate_period_metrics(trades: &[TradeWithDerived]) -> PeriodMetrics {
     }
 }
 
-/// Calculate equity curve from a list of trades
+/// Calculate equity curve from a list of trades (aggregated by day)
 pub fn calculate_equity_curve(trades: &[&TradeWithDerived]) -> Vec<EquityPoint> {
+    // First, aggregate PnL by date
+    let mut daily_pnl: HashMap<NaiveDate, f64> = HashMap::new();
+
+    for trade in trades {
+        if let Some(net_pnl) = trade.net_pnl {
+            *daily_pnl.entry(trade.trade.trade_date).or_insert(0.0) += net_pnl;
+        }
+    }
+
+    // Sort dates and build curve with one point per day
+    let mut dates: Vec<NaiveDate> = daily_pnl.keys().copied().collect();
+    dates.sort();
+
     let mut curve = Vec::new();
     let mut cumulative_pnl: f64 = 0.0;
     let mut peak: f64 = 0.0;
 
-    for trade in trades {
-        if let Some(net_pnl) = trade.net_pnl {
-            cumulative_pnl += net_pnl;
-            peak = peak.max(cumulative_pnl);
-            let drawdown = peak - cumulative_pnl;
+    for date in dates {
+        cumulative_pnl += daily_pnl[&date];
+        peak = peak.max(cumulative_pnl);
+        let drawdown = peak - cumulative_pnl;
 
-            curve.push(EquityPoint {
-                date: trade.trade.trade_date,
-                cumulative_pnl,
-                drawdown,
-            });
-        }
+        curve.push(EquityPoint {
+            date,
+            cumulative_pnl,
+            drawdown,
+        });
     }
 
     curve
