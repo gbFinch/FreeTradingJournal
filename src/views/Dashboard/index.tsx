@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useMetricsStore } from '@/stores';
 import DashboardMetrics from '@/components/DashboardMetrics';
 import DashboardSkeleton from '@/components/DashboardSkeleton';
@@ -9,6 +9,15 @@ import PeriodSelector from '@/components/PeriodSelector';
 
 export default function Dashboard() {
   const { periodMetrics, equityCurve, dailyPerformance, fetchAll, isLoading, setPeriodType, periodType, selectedMonth } = useMetricsStore();
+  const currentYear = new Date().getFullYear();
+  const isMonthlyView = periodType === 'all' || periodType === 'ytd';
+
+  const monthlyGridData = useMemo(() => {
+    if (periodType !== 'ytd') {
+      return dailyPerformance;
+    }
+    return dailyPerformance.filter((day) => day.date.startsWith(`${currentYear}-`));
+  }, [dailyPerformance, periodType, currentYear]);
 
   // Track transition state for animation
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -72,10 +81,10 @@ export default function Dashboard() {
             {/* Calendar Heatmap or Monthly Grid - 2/3 width */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 lg:col-span-2">
               <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">
-                {periodType === 'all' ? 'Monthly P&L' : 'Daily P&L'}
+                {isMonthlyView ? 'Monthly P&L' : 'Daily P&L'}
               </h2>
-              {periodType === 'all' ? (
-                <MonthlyPnLGrid data={dailyPerformance} />
+              {isMonthlyView ? (
+                <MonthlyPnLGrid data={monthlyGridData} />
               ) : (
                 <CalendarHeatmap data={dailyPerformance} />
               )}

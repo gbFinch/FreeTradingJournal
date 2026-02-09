@@ -24,6 +24,12 @@ vi.mock("@/components/CalendarHeatmap", () => ({
   ),
 }));
 
+vi.mock("@/components/MonthlyPnLGrid", () => ({
+  default: ({ data }: { data: DailyPerformance[] }) => (
+    <div data-testid="monthly-pnl-grid" data-points={data.length}>MonthlyPnLGrid</div>
+  ),
+}));
+
 vi.mock("@/components/DashboardSkeleton", () => ({
   default: () => <div data-testid="dashboard-skeleton">Loading skeleton</div>,
 }));
@@ -202,6 +208,30 @@ describe("Dashboard", () => {
 
       expect(screen.getByText("Daily P&L")).toBeInTheDocument();
       expect(screen.getByTestId("calendar-heatmap")).toBeInTheDocument();
+    });
+
+    it("renders monthly P&L grid for YTD with only current-year data", () => {
+      const currentYear = new Date().getFullYear();
+      vi.mocked(useMetricsStore).mockReturnValue({
+        periodMetrics: mockPeriodMetrics,
+        equityCurve: mockEquityCurve,
+        dailyPerformance: [
+          { date: `${currentYear}-01-15`, realized_net_pnl: 500, trade_count: 3, win_count: 2, loss_count: 1 },
+          { date: `${currentYear - 1}-12-30`, realized_net_pnl: 250, trade_count: 1, win_count: 1, loss_count: 0 },
+        ],
+        fetchAll: mockFetchAll,
+        setPeriodType: mockSetPeriodType,
+        isLoading: false,
+        selectedMonth: new Date(`${currentYear}-01-15`),
+        periodType: "ytd",
+      });
+
+      render(<Dashboard />);
+
+      expect(screen.getByText("Monthly P&L")).toBeInTheDocument();
+      expect(screen.getByTestId("monthly-pnl-grid")).toBeInTheDocument();
+      expect(screen.getByTestId("monthly-pnl-grid")).toHaveAttribute("data-points", "1");
+      expect(screen.queryByTestId("calendar-heatmap")).not.toBeInTheDocument();
     });
   });
 
