@@ -3,10 +3,11 @@ import { useMetricsStore } from '@/stores';
 import DashboardMetrics from '@/components/DashboardMetrics';
 import EquityCurve from '@/components/EquityCurve';
 import CalendarHeatmap from '@/components/CalendarHeatmap';
+import MonthlyPnLGrid from '@/components/MonthlyPnLGrid';
 import PeriodSelector from '@/components/PeriodSelector';
 
 export default function Dashboard() {
-  const { periodMetrics, equityCurve, dailyPerformance, fetchAll, isLoading, setPeriodType } = useMetricsStore();
+  const { periodMetrics, equityCurve, dailyPerformance, fetchAll, isLoading, setPeriodType, periodType } = useMetricsStore();
 
   useEffect(() => {
     // Reset to 'month' period when Dashboard mounts to ensure
@@ -43,10 +44,16 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Calendar Heatmap - 2/3 width */}
+            {/* Calendar Heatmap or Monthly Grid - 2/3 width */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 lg:col-span-2">
-              <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Daily P&L</h2>
-              <CalendarHeatmap data={dailyPerformance} />
+              <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">
+                {periodType === 'all' ? 'Monthly P&L' : 'Daily P&L'}
+              </h2>
+              {periodType === 'all' ? (
+                <MonthlyPnLGrid data={dailyPerformance} />
+              ) : (
+                <CalendarHeatmap data={dailyPerformance} />
+              )}
             </div>
           </div>
         </>

@@ -27,3 +27,13 @@ export interface EquityPoint {
   cumulative_pnl: number;
   drawdown: number;
 }
+
+export interface MonthlyPerformance {
+  yearMonth: string;      // "2024-01"
+  year: number;
+  month: number;
+  realized_net_pnl: number;
+  trade_count: number;
+  win_count: number;
+  loss_count: number;
+}
