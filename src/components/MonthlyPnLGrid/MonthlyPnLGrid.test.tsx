@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, type Mock } from "vitest";
 import MonthlyPnLGrid from "./index";
 import { aggregateDailyToMonthly, groupByYear, calculateYearTotal, formatCurrency } from "./utils";
 import type { DailyPerformance } from "@/types";
@@ -15,7 +15,7 @@ const mockFetchAll = vi.fn();
 describe("MonthlyPnLGrid", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (useMetricsStore as ReturnType<typeof vi.fn>).mockReturnValue({
+    (useMetricsStore as unknown as Mock).mockReturnValue({
       setSelectedMonth: mockSetSelectedMonth,
       fetchAll: mockFetchAll,
     });
