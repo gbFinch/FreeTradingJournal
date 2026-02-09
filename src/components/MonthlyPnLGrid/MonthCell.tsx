@@ -4,13 +4,17 @@ import { formatCurrency } from './utils';
 
 interface MonthCellProps {
   data: MonthlyPerformance | null;
+  onClick?: () => void;
 }
 
-export default function MonthCell({ data }: MonthCellProps) {
+export default function MonthCell({ data, onClick }: MonthCellProps) {
   if (!data || data.trade_count === 0) {
     // Empty or no trades
     return (
-      <div className="h-14 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center border border-gray-200 dark:border-gray-700">
+      <div
+        className="h-14 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        onClick={onClick}
+      >
         <span className="text-xs text-gray-400 dark:text-gray-500">-</span>
       </div>
     );
@@ -27,12 +31,13 @@ export default function MonthCell({ data }: MonthCellProps) {
   return (
     <div
       className={clsx(
-        'h-14 rounded flex flex-col items-center justify-center p-1 border transition-all cursor-pointer hover:opacity-90',
+        'h-14 rounded flex flex-col items-center justify-center p-1 border transition-all cursor-pointer hover:opacity-80 hover:scale-[1.02]',
         isPositive && 'bg-emerald-100 dark:bg-emerald-900 border-emerald-300 dark:border-emerald-600',
         isNegative && 'bg-red-100 dark:bg-[#6b1c1c] border-red-300 dark:border-red-700',
         !isPositive && !isNegative && 'bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
       )}
       title={`${data.trade_count} trades | W: ${data.win_count} L: ${data.loss_count}${winRate ? ` | ${winRate}% win rate` : ''}`}
+      onClick={onClick}
     >
       <span className={clsx(
         'text-sm font-bold',

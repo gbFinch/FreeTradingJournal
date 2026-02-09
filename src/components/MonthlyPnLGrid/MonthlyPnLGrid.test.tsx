@@ -1,10 +1,26 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import MonthlyPnLGrid from "./index";
 import { aggregateDailyToMonthly, groupByYear, calculateYearTotal, formatCurrency } from "./utils";
 import type { DailyPerformance } from "@/types";
+import { useMetricsStore } from "@/stores/metricsStore";
+
+vi.mock("@/stores/metricsStore", () => ({
+  useMetricsStore: vi.fn(),
+}));
+
+const mockSetSelectedMonth = vi.fn();
+const mockFetchAll = vi.fn();
 
 describe("MonthlyPnLGrid", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (useMetricsStore as ReturnType<typeof vi.fn>).mockReturnValue({
+      setSelectedMonth: mockSetSelectedMonth,
+      fetchAll: mockFetchAll,
+    });
+  });
+
   const mockData: DailyPerformance[] = [
     { date: "2024-01-15", realized_net_pnl: 500, trade_count: 3, win_count: 2, loss_count: 1 },
     { date: "2024-01-16", realized_net_pnl: -200, trade_count: 2, win_count: 0, loss_count: 2 },
@@ -74,6 +90,60 @@ describe("MonthlyPnLGrid", () => {
 
       // 2024 should appear before 2023 in the DOM
       expect(year2024.compareDocumentPosition(year2023) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+  });
+
+  describe("month click navigation", () => {
+    it("calls setSelectedMonth and fetchAll when clicking a month cell with data", () => {
+      render(<MonthlyPnLGrid data={mockData} />);
+
+      // Click on January 2024 cell (has trades)
+      const janCell = screen.getByText("5 trades").closest("div");
+      fireEvent.click(janCell!);
+
+      expect(mockSetSelectedMonth).toHaveBeenCalledTimes(1);
+      expect(mockFetchAll).toHaveBeenCalledTimes(1);
+
+      // Verify the date passed is January 2024
+      const calledDate = mockSetSelectedMonth.mock.calls[0][0];
+      expect(calledDate.getFullYear()).toBe(2024);
+      expect(calledDate.getMonth()).toBe(0); // January is 0
+      expect(calledDate.getDate()).toBe(1);
+    });
+
+    it("calls setSelectedMonth and fetchAll when clicking an empty month cell", () => {
+      render(<MonthlyPnLGrid data={mockData} />);
+
+      // Find an empty cell (shows "-") - there are many of them
+      const emptyCells = screen.getAllByText("-");
+      fireEvent.click(emptyCells[0]);
+
+      expect(mockSetSelectedMonth).toHaveBeenCalledTimes(1);
+      expect(mockFetchAll).toHaveBeenCalledTimes(1);
+    });
+
+    it("navigates to correct month when clicking February cell", () => {
+      render(<MonthlyPnLGrid data={mockData} />);
+
+      // Click on February 2024 cell
+      const febCell = screen.getByText("2 trades").closest("div");
+      fireEvent.click(febCell!);
+
+      const calledDate = mockSetSelectedMonth.mock.calls[0][0];
+      expect(calledDate.getFullYear()).toBe(2024);
+      expect(calledDate.getMonth()).toBe(1); // February is 1
+    });
+
+    it("navigates to correct year when clicking December 2023 cell", () => {
+      render(<MonthlyPnLGrid data={mockData} />);
+
+      // Click on December 2023 cell (has 1 trade)
+      const decCell = screen.getByText("1 trade").closest("div");
+      fireEvent.click(decCell!);
+
+      const calledDate = mockSetSelectedMonth.mock.calls[0][0];
+      expect(calledDate.getFullYear()).toBe(2023);
+      expect(calledDate.getMonth()).toBe(11); // December is 11
     });
   });
 

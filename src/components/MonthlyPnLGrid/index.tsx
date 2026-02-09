@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import clsx from 'clsx';
 import type { DailyPerformance } from '@/types';
+import { useMetricsStore } from '@/stores/metricsStore';
 import MonthCell from './MonthCell';
 import { aggregateDailyToMonthly, groupByYear, calculateYearTotal, formatCurrency, MONTH_NAMES } from './utils';
 
@@ -9,6 +10,15 @@ interface MonthlyPnLGridProps {
 }
 
 export default function MonthlyPnLGrid({ data }: MonthlyPnLGridProps) {
+  const { setSelectedMonth, fetchAll } = useMetricsStore();
+
+  const handleMonthClick = useCallback((year: number, month: number) => {
+    // Create a date for the first day of the selected month
+    const selectedDate = new Date(year, month - 1, 1);
+    setSelectedMonth(selectedDate);
+    fetchAll();
+  }, [setSelectedMonth, fetchAll]);
+
   const { yearlyData, grandTotal, years } = useMemo(() => {
     const monthlyData = aggregateDailyToMonthly(data);
     const yearMap = groupByYear(monthlyData);
@@ -70,7 +80,10 @@ export default function MonthlyPnLGrid({ data }: MonthlyPnLGridProps) {
                 {/* Month cells */}
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                   <td key={month} className="px-1 py-1">
-                    <MonthCell data={monthMap.get(month) || null} />
+                    <MonthCell
+                      data={monthMap.get(month) || null}
+                      onClick={() => handleMonthClick(year, month)}
+                    />
                   </td>
                 ))}
 
