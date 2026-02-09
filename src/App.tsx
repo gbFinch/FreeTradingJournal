@@ -5,6 +5,7 @@ import Dashboard from '@/views/Dashboard';
 import CalendarView from '@/views/CalendarView';
 import TradeList from '@/views/TradeList';
 import TradeDetail from '@/views/TradeDetail';
+import Metrics from '@/views/Metrics';
 import TradeForm from '@/components/TradeForm';
 
 function ThemeToggle() {
@@ -120,6 +121,24 @@ function Sidebar({ onAddTrade }: SidebarProps) {
           </li>
           <li>
             <NavLink
+              to="/metrics"
+              title="Metrics"
+              className={({ isActive }) =>
+                `flex items-center gap-2 p-2 w-full rounded-lg ${
+                  isActive
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'
+                }`
+              }
+            >
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3v18h18M7 13l4-4 3 3 5-5" />
+              </svg>
+              <span className={textClass}>Metrics</span>
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
               to="/trades"
               title="Trades"
               className={({ isActive }) =>
@@ -168,6 +187,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/calendar" element={<CalendarView />} />
+            <Route path="/metrics" element={<Metrics />} />
             <Route path="/trades" element={<TradeList />} />
             <Route path="/trades/:id" element={<TradeDetail />} />
           </Routes>

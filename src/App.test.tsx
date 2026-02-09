@@ -19,6 +19,10 @@ vi.mock("@/views/CalendarView", () => ({
   default: () => <div data-testid="calendar-view">Calendar View</div>,
 }));
 
+vi.mock("@/views/Metrics", () => ({
+  default: () => <div data-testid="metrics-view">Metrics View</div>,
+}));
+
 vi.mock("@/views/TradeList", () => ({
   default: () => <div data-testid="tradelist-view">TradeList View</div>,
 }));
@@ -107,6 +111,12 @@ describe("App", () => {
       expect(screen.getByRole("link", { name: "Trades" })).toBeInTheDocument();
     });
 
+    it("renders Metrics nav link", () => {
+      renderWithRouter();
+
+      expect(screen.getByRole("link", { name: "Metrics" })).toBeInTheDocument();
+    });
+
     it("Dashboard link points to /", () => {
       renderWithRouter();
 
@@ -126,6 +136,13 @@ describe("App", () => {
 
       const link = screen.getByRole("link", { name: "Trades" });
       expect(link).toHaveAttribute("href", "/trades");
+    });
+
+    it("Metrics link points to /metrics", () => {
+      renderWithRouter();
+
+      const link = screen.getByRole("link", { name: "Metrics" });
+      expect(link).toHaveAttribute("href", "/metrics");
     });
   });
 
@@ -150,6 +167,14 @@ describe("App", () => {
       fireEvent.click(screen.getByRole("link", { name: "Trades" }));
 
       expect(screen.getByTestId("tradelist-view")).toBeInTheDocument();
+    });
+
+    it("renders Metrics view when navigating to /metrics", () => {
+      renderWithRouter();
+
+      fireEvent.click(screen.getByRole("link", { name: "Metrics" }));
+
+      expect(screen.getByTestId("metrics-view")).toBeInTheDocument();
     });
   });
 
@@ -234,8 +259,9 @@ describe("App", () => {
 
       fireEvent.click(screen.getByRole("link", { name: "Calendar" }));
 
-      // Dashboard and Trades should have inactive styling (text-gray-600 for light mode)
+      // Dashboard, Metrics, and Trades should have inactive styling (text-gray-600 for light mode)
       expect(screen.getByRole("link", { name: "Dashboard" })).toHaveClass("text-gray-600");
+      expect(screen.getByRole("link", { name: "Metrics" })).toHaveClass("text-gray-600");
       expect(screen.getByRole("link", { name: "Trades" })).toHaveClass("text-gray-600");
     });
   });
