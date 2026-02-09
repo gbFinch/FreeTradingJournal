@@ -1,13 +1,35 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useMetricsStore } from '@/stores';
 import DashboardMetrics from '@/components/DashboardMetrics';
+import DashboardSkeleton from '@/components/DashboardSkeleton';
 import EquityCurve from '@/components/EquityCurve';
 import CalendarHeatmap from '@/components/CalendarHeatmap';
 import MonthlyPnLGrid from '@/components/MonthlyPnLGrid';
 import PeriodSelector from '@/components/PeriodSelector';
 
 export default function Dashboard() {
-  const { periodMetrics, equityCurve, dailyPerformance, fetchAll, isLoading, setPeriodType, periodType } = useMetricsStore();
+  const { periodMetrics, equityCurve, dailyPerformance, fetchAll, isLoading, setPeriodType, periodType, selectedMonth } = useMetricsStore();
+
+  // Track transition state for animation
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const prevKeyRef = useRef<string | null>(null);
+
+  // Create unique key for each period view
+  const transitionKey = periodType === 'month'
+    ? `month-${selectedMonth.getFullYear()}-${selectedMonth.getMonth()}`
+    : periodType;
+
+  // Detect when period changes and trigger transition animation
+  useEffect(() => {
+    if (prevKeyRef.current !== null && prevKeyRef.current !== transitionKey) {
+      // Period changed - start transition
+      setIsTransitioning(true);
+      // End transition after a brief moment to trigger animation
+      const timer = setTimeout(() => setIsTransitioning(false), 50);
+      return () => clearTimeout(timer);
+    }
+    prevKeyRef.current = transitionKey;
+  }, [transitionKey]);
 
   useEffect(() => {
     // Reset to 'month' period when Dashboard mounts to ensure
@@ -16,6 +38,11 @@ export default function Dashboard() {
     fetchAll();
   }, [setPeriodType, fetchAll]);
 
+  // Only show skeleton on initial load (no existing data)
+  const showSkeleton = isLoading && !periodMetrics;
+  // Show content if we have data and not mid-transition
+  const showContent = periodMetrics !== null && !isTransitioning;
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -23,12 +50,10 @@ export default function Dashboard() {
         <PeriodSelector />
       </div>
 
-      {isLoading && (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading...</div>
-      )}
+      {showSkeleton && <DashboardSkeleton />}
 
-      {!isLoading && periodMetrics && (
-        <>
+      {showContent && (
+        <div key={transitionKey} className="animate-fade-in">
           {/* Dashboard Metrics */}
           <DashboardMetrics metrics={periodMetrics} />
 
@@ -56,7 +81,7 @@ export default function Dashboard() {
               )}
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {!isLoading && !periodMetrics && (

@@ -24,6 +24,10 @@ vi.mock("@/components/CalendarHeatmap", () => ({
   ),
 }));
 
+vi.mock("@/components/DashboardSkeleton", () => ({
+  default: () => <div data-testid="dashboard-skeleton">Loading skeleton</div>,
+}));
+
 const mockPeriodMetrics: PeriodMetrics = {
   total_net_pnl: 5000,
   trade_count: 50,
@@ -58,7 +62,7 @@ describe("Dashboard", () => {
   });
 
   describe("loading state", () => {
-    it("shows loading indicator when loading", () => {
+    it("shows loading skeleton when loading", () => {
       vi.mocked(useMetricsStore).mockReturnValue({
         periodMetrics: null,
         equityCurve: [],
@@ -66,11 +70,13 @@ describe("Dashboard", () => {
         fetchAll: mockFetchAll,
         setPeriodType: mockSetPeriodType,
         isLoading: true,
+        selectedMonth: new Date("2024-01-15"),
+        periodType: "month",
       });
 
       render(<Dashboard />);
 
-      expect(screen.getByText("Loading...")).toBeInTheDocument();
+      expect(screen.getByTestId("dashboard-skeleton")).toBeInTheDocument();
     });
   });
 
@@ -83,6 +89,8 @@ describe("Dashboard", () => {
         fetchAll: mockFetchAll,
         setPeriodType: mockSetPeriodType,
         isLoading: false,
+        selectedMonth: new Date("2024-01-15"),
+        periodType: "month",
       });
 
       render(<Dashboard />);
@@ -101,6 +109,8 @@ describe("Dashboard", () => {
         fetchAll: mockFetchAll,
         setPeriodType: mockSetPeriodType,
         isLoading: false,
+        selectedMonth: new Date("2024-01-15"),
+        periodType: "month",
       });
     });
 
@@ -204,6 +214,8 @@ describe("Dashboard", () => {
         fetchAll: mockFetchAll,
         setPeriodType: mockSetPeriodType,
         isLoading: false,
+        selectedMonth: new Date("2024-01-15"),
+        periodType: "month",
       });
 
       render(<Dashboard />);
@@ -221,6 +233,8 @@ describe("Dashboard", () => {
         fetchAll: mockFetchAll,
         setPeriodType: mockSetPeriodType,
         isLoading: false,
+        selectedMonth: new Date("2024-01-15"),
+        periodType: "month",
       });
 
       render(<Dashboard />);
@@ -240,6 +254,8 @@ describe("Dashboard", () => {
         fetchAll: mockFetchAll,
         setPeriodType: mockSetPeriodType,
         isLoading: false,
+        selectedMonth: new Date("2024-01-15"),
+        periodType: "month",
       });
 
       render(<Dashboard />);
@@ -256,6 +272,8 @@ describe("Dashboard", () => {
         fetchAll: mockFetchAll,
         setPeriodType: mockSetPeriodType,
         isLoading: false,
+        selectedMonth: new Date("2024-01-15"),
+        periodType: "month",
       });
 
       render(<Dashboard />);
@@ -272,6 +290,8 @@ describe("Dashboard", () => {
         fetchAll: mockFetchAll,
         setPeriodType: mockSetPeriodType,
         isLoading: false,
+        selectedMonth: new Date("2024-01-15"),
+        periodType: "month",
       });
 
       render(<Dashboard />);
