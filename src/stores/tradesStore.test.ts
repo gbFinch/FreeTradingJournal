@@ -291,6 +291,48 @@ describe("useTradesStore", () => {
     });
   });
 
+  describe("deleteTrades", () => {
+    it("deletes multiple trades and refreshes list", async () => {
+      vi.mocked(api.deleteTrade).mockResolvedValue(undefined);
+      vi.mocked(api.getTrades).mockResolvedValue([]);
+
+      await useTradesStore.getState().deleteTrades(["trade-1", "trade-2"]);
+
+      expect(api.deleteTrade).toHaveBeenCalledTimes(2);
+      expect(api.deleteTrade).toHaveBeenCalledWith("trade-1");
+      expect(api.deleteTrade).toHaveBeenCalledWith("trade-2");
+      expect(api.getTrades).toHaveBeenCalled();
+    });
+
+    it("clears selectedTrade if it is deleted in bulk", async () => {
+      vi.mocked(api.deleteTrade).mockResolvedValue(undefined);
+      vi.mocked(api.getTrades).mockResolvedValue([]);
+      useTradesStore.setState({ selectedTrade: mockTrade });
+
+      await useTradesStore.getState().deleteTrades(["trade-1", "trade-2"]);
+
+      expect(useTradesStore.getState().selectedTrade).toBeNull();
+    });
+
+    it("does nothing when ids are empty", async () => {
+      await useTradesStore.getState().deleteTrades([]);
+
+      expect(api.deleteTrade).not.toHaveBeenCalled();
+      expect(api.getTrades).not.toHaveBeenCalled();
+    });
+
+    it("handles bulk delete error and rethrows", async () => {
+      vi.mocked(api.deleteTrade).mockRejectedValue(new Error("Bulk delete failed"));
+
+      await expect(
+        useTradesStore.getState().deleteTrades(["trade-1"])
+      ).rejects.toThrow("Bulk delete failed");
+
+      expect(useTradesStore.getState().error).toBe("Error: Bulk delete failed");
+      expect(useTradesStore.getState().isLoading).toBe(false);
+    });
+  });
+
   describe("setFilters", () => {
     it("updates filters", () => {
       useTradesStore.getState().setFilters({ symbol: "AAPL", direction: "long" });

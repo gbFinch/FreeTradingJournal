@@ -71,6 +71,7 @@ const mockTrade2: TradeWithDerived = {
 
 describe("TradeList", () => {
   const mockFetchTrades = vi.fn();
+  const mockDeleteTrades = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -88,6 +89,7 @@ describe("TradeList", () => {
       vi.mocked(useTradesStore).mockReturnValue({
         trades: [],
         fetchTrades: mockFetchTrades,
+        deleteTrades: mockDeleteTrades,
         isLoading: true,
       });
 
@@ -102,6 +104,7 @@ describe("TradeList", () => {
       vi.mocked(useTradesStore).mockReturnValue({
         trades: [],
         fetchTrades: mockFetchTrades,
+        deleteTrades: mockDeleteTrades,
         isLoading: false,
       });
 
@@ -117,6 +120,7 @@ describe("TradeList", () => {
       vi.mocked(useTradesStore).mockReturnValue({
         trades: [mockTrade, mockTrade2],
         fetchTrades: mockFetchTrades,
+        deleteTrades: mockDeleteTrades,
         isLoading: false,
       });
     });
@@ -142,6 +146,7 @@ describe("TradeList", () => {
     it("renders trade table headers", () => {
       render(<TradeList />);
 
+      expect(screen.getByLabelText("Select all trades")).toBeInTheDocument();
       expect(screen.getByText("Date")).toBeInTheDocument();
       expect(screen.getByText("Symbol")).toBeInTheDocument();
       expect(screen.getByText("Direction")).toBeInTheDocument();
@@ -189,6 +194,31 @@ describe("TradeList", () => {
 
       expect(mockNavigate).toHaveBeenCalledWith("/trades/trade-1");
     });
+
+    it("selects trades for bulk actions", async () => {
+      const user = userEvent.setup();
+      render(<TradeList />);
+
+      await user.click(screen.getByLabelText("Select trade AAPL on 2024-01-15"));
+
+      expect(screen.getByText("1 selected")).toBeInTheDocument();
+    });
+
+    it("deletes selected trades from bulk actions", async () => {
+      const user = userEvent.setup();
+      mockDeleteTrades.mockResolvedValue(undefined);
+      render(<TradeList />);
+
+      await user.click(screen.getByLabelText("Select trade AAPL on 2024-01-15"));
+      await user.click(screen.getByLabelText("Select trade MSFT on 2024-01-15"));
+      await user.click(screen.getByText("Delete selected"));
+
+      expect(screen.getByText("Delete Selected Trades?")).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Delete" }));
+
+      expect(mockDeleteTrades).toHaveBeenCalledWith(["trade-1", "trade-2"]);
+    });
   });
 
   describe("new trade form", () => {
@@ -196,6 +226,7 @@ describe("TradeList", () => {
       vi.mocked(useTradesStore).mockReturnValue({
         trades: [],
         fetchTrades: mockFetchTrades,
+        deleteTrades: mockDeleteTrades,
         isLoading: false,
       });
     });

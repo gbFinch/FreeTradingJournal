@@ -18,15 +18,27 @@ function formatCurrency(value: number | null): string {
 
 interface TradeRowProps {
   trade: TradeWithDerived;
+  isSelected: boolean;
+  onToggleSelect: (tradeId: string) => void;
   onClick: () => void;
 }
 
-function TradeRow({ trade, onClick }: TradeRowProps) {
+function TradeRow({ trade, isSelected, onToggleSelect, onClick }: TradeRowProps) {
   return (
     <tr
       onClick={onClick}
       className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
     >
+      <td className="px-4 py-3 whitespace-nowrap">
+        <input
+          type="checkbox"
+          aria-label={`Select trade ${trade.symbol} on ${trade.trade_date}`}
+          checked={isSelected}
+          onChange={() => onToggleSelect(trade.id)}
+          onClick={event => event.stopPropagation()}
+          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+      </td>
       <td className="px-4 py-3 whitespace-nowrap">
         {format(new Date(trade.trade_date), 'MMM d, yyyy')}
       </td>
@@ -96,13 +108,57 @@ function TradeRow({ trade, onClick }: TradeRowProps) {
 export default function TradeList() {
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
-  const { trades, fetchTrades, isLoading } = useTradesStore();
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [selectedTradeIds, setSelectedTradeIds] = useState<Set<string>>(new Set());
+  const { trades, fetchTrades, deleteTrades, isLoading } = useTradesStore();
   const { accounts, selectedAccountId } = useAccountsStore();
   const { openDialog: openImportDialog } = useImportStore();
 
   useEffect(() => {
     fetchTrades();
   }, [fetchTrades]);
+
+  useEffect(() => {
+    // Keep only selections for trades still visible in the current list.
+    setSelectedTradeIds(current => {
+      const validIds = new Set(trades.map(trade => trade.id));
+      const next = new Set(Array.from(current).filter(id => validIds.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, [trades]);
+
+  const allSelected = trades.length > 0 && selectedTradeIds.size === trades.length;
+
+  const toggleTradeSelection = (tradeId: string) => {
+    setSelectedTradeIds(current => {
+      const next = new Set(current);
+      if (next.has(tradeId)) {
+        next.delete(tradeId);
+      } else {
+        next.add(tradeId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedTradeIds(new Set());
+      return;
+    }
+    setSelectedTradeIds(new Set(trades.map(trade => trade.id)));
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      const ids = Array.from(selectedTradeIds);
+      await deleteTrades(ids);
+      setSelectedTradeIds(new Set());
+      setShowBulkDeleteConfirm(false);
+    } catch (error) {
+      console.error('Failed to delete selected trades', error);
+    }
+  };
 
   const defaultAccountId = selectedAccountId ?? accounts[0]?.id ?? '';
 
@@ -166,9 +222,40 @@ export default function TradeList() {
 
       {!isLoading && trades.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-4">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              {selectedTradeIds.size > 0
+                ? `${selectedTradeIds.size} selected`
+                : 'Select trades to perform bulk actions'}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleSelectAll}
+                className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                {allSelected ? 'Clear selection' : 'Select all'}
+              </button>
+              <button
+                onClick={() => setShowBulkDeleteConfirm(true)}
+                disabled={selectedTradeIds.size === 0}
+                className="px-3 py-1.5 text-sm text-white bg-red-600 rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Delete selected
+              </button>
+            </div>
+          </div>
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
+                <th className="px-4 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all trades"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Date
                 </th>
@@ -200,11 +287,40 @@ export default function TradeList() {
                 <TradeRow
                   key={trade.id}
                   trade={trade}
+                  isSelected={selectedTradeIds.has(trade.id)}
+                  onToggleSelect={toggleTradeSelection}
                   onClick={() => navigate(`/trades/${trade.id}`)}
                 />
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md">
+            <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Delete Selected Trades?</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              This will permanently delete {selectedTradeIds.size} selected trade
+              {selectedTradeIds.size === 1 ? '' : 's'}. This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowBulkDeleteConfirm(false)}
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

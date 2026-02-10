@@ -14,6 +14,7 @@ interface TradesState {
   createTrade: (input: CreateTradeInput) => Promise<TradeWithDerived>;
   updateTrade: (id: string, input: UpdateTradeInput) => Promise<TradeWithDerived>;
   deleteTrade: (id: string) => Promise<void>;
+  deleteTrades: (ids: string[]) => Promise<void>;
   setFilters: (filters: TradeFilters) => void;
   clearError: () => void;
 }
@@ -108,6 +109,25 @@ export const useTradesStore = create<TradesState>((set, get) => ({
       await api.deleteTrade(id);
       await get().fetchTrades();
       if (get().selectedTrade?.id === id) {
+        set({ selectedTrade: null });
+      }
+      set({ isLoading: false });
+    } catch (error) {
+      set({ error: String(error), isLoading: false });
+      throw error;
+    }
+  },
+
+  deleteTrades: async (ids: string[]) => {
+    if (ids.length === 0) return;
+
+    set({ isLoading: true, error: null });
+
+    try {
+      await Promise.all(ids.map(id => api.deleteTrade(id)));
+      await get().fetchTrades();
+      const selectedTrade = get().selectedTrade;
+      if (selectedTrade && ids.includes(selectedTrade.id)) {
         set({ selectedTrade: null });
       }
       set({ isLoading: false });
