@@ -1,12 +1,74 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BarChart, Bar, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useThemeStore, useTradesStore } from '@/stores';
 import { buildHourlyMetrics, buildTickerMetrics, buildWeekdayMetrics, formatCompactCurrency } from './utils';
+
+type ChartMode = 'tradeCount' | 'pnl';
+const MAX_TICKER_BARS = 10;
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function kpiValueClass(value: number): string {
+  if (value > 0) {
+    return 'text-green-600 dark:text-green-400';
+  }
+  if (value < 0) {
+    return 'text-red-600 dark:text-red-400';
+  }
+  return 'text-gray-900 dark:text-gray-100';
+}
+
+function SegmentToggle({
+  mode,
+  onChange,
+  leftLabel,
+  rightLabel,
+}: {
+  mode: ChartMode;
+  onChange: (mode: ChartMode) => void;
+  leftLabel: string;
+  rightLabel: string;
+}) {
+  return (
+    <div className="inline-flex bg-gray-100 dark:bg-gray-900/50 rounded-lg p-1 gap-1">
+      <button
+        type="button"
+        onClick={() => onChange('tradeCount')}
+        className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+          mode === 'tradeCount'
+            ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+        }`}
+      >
+        {leftLabel}
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange('pnl')}
+        className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+          mode === 'pnl'
+            ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+        }`}
+      >
+        {rightLabel}
+      </button>
+    </div>
+  );
+}
 
 export default function Metrics() {
   const { trades, fetchTrades, isLoading, error } = useTradesStore();
   const { theme } = useThemeStore();
   const isDark = theme === 'dark';
+  const [weekdayMode, setWeekdayMode] = useState<ChartMode>('tradeCount');
+  const [hourlyMode, setHourlyMode] = useState<ChartMode>('tradeCount');
 
   useEffect(() => {
     fetchTrades();
@@ -15,6 +77,44 @@ export default function Metrics() {
   const weekdayMetrics = useMemo(() => buildWeekdayMetrics(trades), [trades]);
   const hourlyMetrics = useMemo(() => buildHourlyMetrics(trades), [trades]);
   const tickerMetrics = useMemo(() => buildTickerMetrics(trades), [trades]);
+  const topTickerMetrics = useMemo(() => {
+    if (tickerMetrics.length <= MAX_TICKER_BARS) {
+      return tickerMetrics;
+    }
+
+    const sortedByMagnitude = [...tickerMetrics].sort((a, b) => Math.abs(b.pnl) - Math.abs(a.pnl));
+    const top = sortedByMagnitude.slice(0, MAX_TICKER_BARS);
+    const remaining = sortedByMagnitude.slice(MAX_TICKER_BARS);
+    const others = remaining.reduce(
+      (acc, entry) => {
+        acc.tradeCount += entry.tradeCount;
+        acc.pnl += entry.pnl;
+        return acc;
+      },
+      { ticker: 'Others', tradeCount: 0, pnl: 0 }
+    );
+
+    const merged = others.tradeCount > 0 ? [...top, others] : top;
+    return merged.sort((a, b) => b.pnl - a.pnl);
+  }, [tickerMetrics]);
+
+  const totalTrades = trades.length;
+  const totalNetPnl = useMemo(
+    () => trades.reduce((sum, trade) => sum + (trade.net_pnl ?? 0), 0),
+    [trades]
+  );
+  const winningTrades = useMemo(
+    () => trades.filter((trade) => (trade.net_pnl ?? 0) > 0).length,
+    [trades]
+  );
+  const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+  const profitFactor = useMemo(() => {
+    const grossProfit = trades.reduce((sum, trade) => sum + ((trade.net_pnl ?? 0) > 0 ? (trade.net_pnl ?? 0) : 0), 0);
+    const grossLoss = trades.reduce((sum, trade) => sum + ((trade.net_pnl ?? 0) < 0 ? Math.abs(trade.net_pnl ?? 0) : 0), 0);
+    return grossLoss > 0 ? grossProfit / grossLoss : null;
+  }, [trades]);
+  const expectancy = totalTrades > 0 ? totalNetPnl / totalTrades : 0;
+
   const tooltipCursor = isDark
     ? { fill: 'rgba(17, 24, 39, 0.8)' }
     : { fill: 'rgba(148, 163, 184, 0.25)' };
@@ -58,36 +158,78 @@ export default function Metrics() {
     <div className="p-6">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Metrics</h1>
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total trades</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{totalTrades}</p>
+        </section>
+        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Net P&amp;L</p>
+          <p className={`text-2xl font-bold ${kpiValueClass(totalNetPnl)}`}>{formatCurrency(totalNetPnl)}</p>
+        </section>
+        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Win rate</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{winRate.toFixed(1)}%</p>
+        </section>
+        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Profit factor</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {profitFactor !== null && isFinite(profitFactor) ? profitFactor.toFixed(2) : 'N/A'}
+          </p>
+          <p className={`text-xs mt-1 ${kpiValueClass(expectancy)}`}>Expectancy {formatCurrency(expectancy)}</p>
+        </section>
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">
-            Daily Trade Distribution
-          </h2>
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h2 className="text-lg font-semibold dark:text-gray-100">Weekday Performance</h2>
+            <SegmentToggle
+              mode={weekdayMode}
+              onChange={setWeekdayMode}
+              leftLabel="Trades"
+              rightLabel="Net P&L"
+            />
+          </div>
           <div className="h-[340px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weekdayMetrics} margin={{ top: 24, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
                 <XAxis dataKey="day" tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-                <YAxis allowDecimals={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                <YAxis
+                  allowDecimals={weekdayMode === 'tradeCount' ? false : true}
+                  tickFormatter={weekdayMode === 'pnl' ? formatCompactCurrency : undefined}
+                  tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                />
                 <Tooltip
                   cursor={tooltipCursor}
                   contentStyle={tooltipContentStyle}
                   labelStyle={tooltipLabelStyle}
                   itemStyle={tooltipItemStyle}
-                  formatter={(value: number) => [value, 'Trades']}
+                  formatter={(value: number) => [
+                    weekdayMode === 'pnl' ? formatCompactCurrency(value) : value,
+                    weekdayMode === 'pnl' ? 'Net P&L' : 'Trades',
+                  ]}
                 />
                 <Bar
-                  dataKey="tradeCount"
-                  fill="#2563EB"
+                  dataKey={weekdayMode}
+                  fill={weekdayMode === 'tradeCount' ? '#2563EB' : '#10B981'}
                   radius={[4, 4, 0, 0]}
-                  activeBar={isDark ? { fill: '#1D4ED8' } : { fill: '#1E40AF' }}
+                  activeBar={isDark ? { fillOpacity: 0.85, stroke: '#111827', strokeWidth: 1 } : { fillOpacity: 0.9 }}
                 >
-                  <LabelList
-                    dataKey="tradeCount"
-                    position="top"
-                    fill={isDark ? '#E5E7EB' : '#1F2937'}
-                    fontSize={12}
-                  />
+                  {weekdayMode === 'pnl' ? (
+                    weekdayMetrics.map((entry) => (
+                      <Cell key={entry.day} fill={entry.pnl >= 0 ? '#10B981' : '#EF4444'} />
+                    ))
+                  ) : null}
+                  {weekdayMode === 'tradeCount' ? (
+                    <LabelList
+                      dataKey="tradeCount"
+                      position="top"
+                      fill={isDark ? '#E5E7EB' : '#1F2937'}
+                      fontSize={12}
+                    />
+                  ) : null}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -95,90 +237,46 @@ export default function Metrics() {
         </section>
 
         <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">PNL by Day of the week</h2>
-          <div className="h-[340px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weekdayMetrics} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
-                <XAxis dataKey="day" tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-                <YAxis tickFormatter={formatCompactCurrency} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-                <Tooltip
-                  cursor={tooltipCursor}
-                  contentStyle={tooltipContentStyle}
-                  labelStyle={tooltipLabelStyle}
-                  itemStyle={tooltipItemStyle}
-                  formatter={(value: number) => [formatCompactCurrency(value), 'Net P&L']}
-                />
-                <Bar
-                  dataKey="pnl"
-                  radius={[4, 4, 0, 0]}
-                  activeBar={isDark ? { fillOpacity: 0.8, stroke: '#111827', strokeWidth: 1 } : { fillOpacity: 0.9 }}
-                >
-                  {weekdayMetrics.map((entry) => (
-                    <Cell key={entry.day} fill={entry.pnl >= 0 ? '#10B981' : '#EF4444'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h2 className="text-lg font-semibold dark:text-gray-100">Hourly Performance</h2>
+            <SegmentToggle
+              mode={hourlyMode}
+              onChange={setHourlyMode}
+              leftLabel="Trades"
+              rightLabel="Net P&L"
+            />
           </div>
-        </section>
-
-        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Hourly Trade Distribution</h2>
-          <div className="h-[340px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={hourlyMetrics} margin={{ top: 24, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
-                <XAxis dataKey="hourLabel" tick={{ fill: '#9CA3AF', fontSize: 11 }} interval={1} />
-                <YAxis allowDecimals={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-                <Tooltip
-                  cursor={tooltipCursor}
-                  contentStyle={tooltipContentStyle}
-                  labelStyle={tooltipLabelStyle}
-                  itemStyle={tooltipItemStyle}
-                  formatter={(value: number) => [value, 'Trades']}
-                />
-                <Bar
-                  dataKey="tradeCount"
-                  fill="#7C3AED"
-                  radius={[4, 4, 0, 0]}
-                  activeBar={isDark ? { fill: '#6D28D9' } : { fill: '#5B21B6' }}
-                >
-                  <LabelList
-                    dataKey="tradeCount"
-                    position="top"
-                    fill={isDark ? '#E5E7EB' : '#1F2937'}
-                    fontSize={11}
-                  />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-
-        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Pnl Per hour</h2>
           <div className="h-[340px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={hourlyMetrics} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
                 <XAxis dataKey="hourLabel" tick={{ fill: '#9CA3AF', fontSize: 11 }} interval={1} />
-                <YAxis tickFormatter={formatCompactCurrency} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                <YAxis
+                  allowDecimals={hourlyMode === 'tradeCount' ? false : true}
+                  tickFormatter={hourlyMode === 'pnl' ? formatCompactCurrency : undefined}
+                  tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                />
                 <Tooltip
                   cursor={tooltipCursor}
                   contentStyle={tooltipContentStyle}
                   labelStyle={tooltipLabelStyle}
                   itemStyle={tooltipItemStyle}
-                  formatter={(value: number) => [formatCompactCurrency(value), 'Net P&L']}
+                  formatter={(value: number) => [
+                    hourlyMode === 'pnl' ? formatCompactCurrency(value) : value,
+                    hourlyMode === 'pnl' ? 'Net P&L' : 'Trades',
+                  ]}
                 />
                 <Bar
-                  dataKey="pnl"
+                  dataKey={hourlyMode}
                   radius={[4, 4, 0, 0]}
+                  fill={hourlyMode === 'tradeCount' ? '#7C3AED' : '#10B981'}
                   activeBar={isDark ? { fillOpacity: 0.8, stroke: '#111827', strokeWidth: 1 } : { fillOpacity: 0.9 }}
                 >
-                  {hourlyMetrics.map((entry) => (
-                    <Cell key={entry.hourLabel} fill={entry.pnl >= 0 ? '#10B981' : '#EF4444'} />
-                  ))}
+                  {hourlyMode === 'pnl' ? (
+                    hourlyMetrics.map((entry) => (
+                      <Cell key={entry.hourLabel} fill={entry.pnl >= 0 ? '#10B981' : '#EF4444'} />
+                    ))
+                  ) : null}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -186,10 +284,15 @@ export default function Metrics() {
         </section>
 
         <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 xl:col-span-2">
-          <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Pnl per Ticker</h2>
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h2 className="text-lg font-semibold dark:text-gray-100">P&amp;L by Ticker</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Top {MAX_TICKER_BARS} by absolute move
+            </p>
+          </div>
           <div className="h-[360px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={tickerMetrics} margin={{ top: 8, right: 12, left: 0, bottom: 40 }}>
+              <BarChart data={topTickerMetrics} margin={{ top: 8, right: 12, left: 0, bottom: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
                 <XAxis
                   dataKey="ticker"
@@ -215,7 +318,7 @@ export default function Metrics() {
                   radius={[4, 4, 0, 0]}
                   activeBar={isDark ? { fillOpacity: 0.8, stroke: '#111827', strokeWidth: 1 } : { fillOpacity: 0.9 }}
                 >
-                  {tickerMetrics.map((entry) => (
+                  {topTickerMetrics.map((entry) => (
                     <Cell key={entry.ticker} fill={entry.pnl >= 0 ? '#10B981' : '#EF4444'} />
                   ))}
                 </Bar>

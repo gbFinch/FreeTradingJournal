@@ -78,11 +78,11 @@ describe('Metrics', () => {
     render(<Metrics />);
 
     expect(screen.getByText('Metrics')).toBeInTheDocument();
-    expect(screen.getByText('Daily Trade Distribution')).toBeInTheDocument();
-    expect(screen.getByText('PNL by Day of the week')).toBeInTheDocument();
-    expect(screen.getByText('Hourly Trade Distribution')).toBeInTheDocument();
-    expect(screen.getByText('Pnl Per hour')).toBeInTheDocument();
-    expect(screen.getByText('Pnl per Ticker')).toBeInTheDocument();
+    expect(screen.getByText('Total trades')).toBeInTheDocument();
+    expect(screen.getAllByText('Net P&L').length).toBeGreaterThan(0);
+    expect(screen.getByText('Weekday Performance')).toBeInTheDocument();
+    expect(screen.getByText('Hourly Performance')).toBeInTheDocument();
+    expect(screen.getByText('P&L by Ticker')).toBeInTheDocument();
   });
 
   it('shows empty state when there are no trades', () => {
