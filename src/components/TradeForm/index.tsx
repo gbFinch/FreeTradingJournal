@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { useTradesStore } from '@/stores';
 import Select from '@/components/Select';
 import type { TradeWithDerived, CreateTradeInput, UpdateTradeInput, Direction, Status, AssetClass, ExitExecution } from '@/types';
+import { parseIbkrPaste } from './ibkrParser';
 
 interface ExitRow {
   id: string;
@@ -35,6 +36,7 @@ export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel
   const [entryFees, setEntryFees] = useState(trade?.fees?.toString() ?? '0');
   const [strategy, setStrategy] = useState(trade?.strategy ?? '');
   const [notes, setNotes] = useState(trade?.notes ?? '');
+  const [ibkrPaste, setIbkrPaste] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   // Exit executions state
@@ -91,6 +93,32 @@ export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel
 
   const updateExit = (id: string, field: keyof ExitRow, value: string) => {
     setExits(exits.map(e => e.id === id ? { ...e, [field]: value } : e));
+  };
+
+  const applyIbkrPaste = () => {
+    setError(null);
+
+    try {
+      const parsed = parseIbkrPaste(ibkrPaste);
+      setSymbol(parsed.symbol);
+      setAssetClass(parsed.assetClass);
+      setDirection(parsed.direction);
+      setQuantity(parsed.quantity.toString());
+      setEntryPrice(parsed.entryPrice.toString());
+      setEntryFees(parsed.entryFees.toString());
+      setExits(
+        parsed.exits.map((exit) => ({
+          id: crypto.randomUUID(),
+          exit_date: tradeDate,
+          exit_time: exit.exit_time,
+          quantity: exit.quantity.toString(),
+          price: exit.price.toString(),
+          fees: exit.fees.toString(),
+        }))
+      );
+    } catch (err) {
+      setError(String(err));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -156,6 +184,34 @@ export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel
       {error && (
         <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm">
           {error}
+        </div>
+      )}
+
+      {!trade && (
+        <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            IBKR Paste (optional)
+          </label>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+            Paste IBKR rows with time, contract, BOT/SLD, qty, price, and fees. Entry Date is applied to all parsed exits.
+          </p>
+          <textarea
+            aria-label="IBKR Paste"
+            value={ibkrPaste}
+            onChange={(e) => setIbkrPaste(e.target.value)}
+            className={inputClass}
+            rows={4}
+            placeholder={"16:18:51\tNVDA Feb13'26 190 PUT\tBOT\t20\t2.44\t13.97"}
+          />
+          <div className="flex justify-end mt-2">
+            <button
+              type="button"
+              onClick={applyIbkrPaste}
+              className="px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+            >
+              Parse & Fill
+            </button>
+          </div>
         </div>
       )}
 

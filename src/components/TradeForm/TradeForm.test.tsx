@@ -171,6 +171,52 @@ describe("TradeForm", () => {
       expect(await screen.findByText(/validation failed/i)).toBeInTheDocument();
       expect(mockOnSuccess).not.toHaveBeenCalled();
     });
+
+    it("parses IBKR paste and submits parsed trade", async () => {
+      const user = userEvent.setup();
+      mockCreateTrade.mockResolvedValue(mockTrade);
+
+      render(
+        <TradeForm
+          defaultAccountId="acc-1"
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      const ibkrTextarea = screen.getByLabelText(/ibkr paste/i);
+      await user.type(
+        ibkrTextarea,
+        [
+          "+\t16:36:13\tNVDA Feb13'26 190 PUT\tSLD\t10\t2.60\t7.02\t145.99",
+          "+\t16:26:48\tNVDA Feb13'26 190 PUT\tSLD\t5\t3.15\t3.51\t348.00",
+          "\t16:19:31\tNVDA Feb13'26 190 PUT\tSLD\t5\t2.79\t3.51\t168.00",
+          "+\t16:18:51\tNVDA Feb13'26 190 PUT\tBOT\t20\t2.44\t13.97",
+        ].join("\n")
+      );
+
+      await user.click(screen.getByText("Parse & Fill"));
+      await user.click(screen.getByText("Create Trade"));
+
+      expect(mockCreateTrade).toHaveBeenCalledWith(
+        expect.objectContaining({
+          symbol: "NVDA Feb13'26 190 PUT",
+          asset_class: "option",
+          direction: "long",
+          quantity: 20,
+          entry_price: 2.44,
+          fees: 13.97,
+          exits: expect.arrayContaining([
+            expect.objectContaining({
+              quantity: 10,
+              price: 2.6,
+              fees: 7.02,
+            }),
+          ]),
+        })
+      );
+      expect(mockOnSuccess).toHaveBeenCalled();
+    });
   });
 
   describe("edit mode", () => {
