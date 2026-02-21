@@ -38,3 +38,6 @@ src-tauri/target/
 
 # Test coverage
 coverage/
+
+# Local assistant notes
+CLAUDE.md
