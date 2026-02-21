@@ -27,7 +27,7 @@ function TradeRow({ trade, isSelected, onToggleSelect, onClick }: TradeRowProps)
   return (
     <tr
       onClick={onClick}
-      className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+      className="cursor-pointer transition-colors hover:bg-stone-50 dark:hover:bg-stone-800/70"
     >
       <td className="px-4 py-3 whitespace-nowrap">
         <input
@@ -36,7 +36,7 @@ function TradeRow({ trade, isSelected, onToggleSelect, onClick }: TradeRowProps)
           checked={isSelected}
           onChange={() => onToggleSelect(trade.id)}
           onClick={event => event.stopPropagation()}
-          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          className="rounded border-stone-300 text-teal-700 focus:ring-teal-500"
         />
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
@@ -46,7 +46,7 @@ function TradeRow({ trade, isSelected, onToggleSelect, onClick }: TradeRowProps)
         <span className="flex items-center gap-1.5">
           {trade.symbol}
           {trade.asset_class === 'option' && (
-            <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">
+            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/60 dark:text-amber-300">
               OPT
             </span>
           )}
@@ -94,7 +94,7 @@ function TradeRow({ trade, isSelected, onToggleSelect, onClick }: TradeRowProps)
                 ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
                 : trade.result === 'loss'
                 ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                : 'bg-stone-100 dark:bg-stone-700 text-stone-800 dark:text-stone-200'
             )}
           >
             {trade.result.toUpperCase()}
@@ -163,19 +163,19 @@ export default function TradeList() {
   const defaultAccountId = selectedAccountId ?? accounts[0]?.id ?? '';
 
   return (
-    <div className="p-6">
+    <div className="p-6 pt-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Trades</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-100">Trades</h1>
         <div className="flex gap-2">
           <button
             onClick={openImportDialog}
-            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            className="app-secondary-btn"
           >
             Import
           </button>
           <button
             onClick={() => setShowForm(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="app-primary-btn"
           >
             + New Trade
           </button>
@@ -185,12 +185,12 @@ export default function TradeList() {
       {/* Trade Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-auto">
-            <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
-              <h2 className="text-lg font-semibold dark:text-gray-100">New Trade</h2>
+          <div className="app-panel max-h-[90vh] w-full max-w-2xl overflow-auto">
+            <div className="flex items-center justify-between border-b border-stone-200 p-4 dark:border-stone-700">
+              <h2 className="text-lg font-semibold dark:text-stone-100">New Trade</h2>
               <button
                 onClick={() => setShowForm(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
               >
                 &times;
               </button>
@@ -210,20 +210,20 @@ export default function TradeList() {
       )}
 
       {isLoading && (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading...</div>
+        <div className="text-center py-8 text-stone-500 dark:text-stone-400">Loading...</div>
       )}
 
       {!isLoading && trades.length === 0 && (
-        <div className="text-center py-16 text-gray-500 dark:text-gray-400">
+        <div className="py-16 text-center text-stone-500 dark:text-stone-400">
           <p>No trades found.</p>
           <p className="mt-2">Click "New Trade" to add your first trade!</p>
         </div>
       )}
 
       {!isLoading && trades.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-4">
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+        <div className="app-panel overflow-hidden">
+          <div className="flex items-center justify-between gap-4 border-b border-stone-200 px-4 py-3 dark:border-stone-700">
+            <p className="text-sm text-stone-600 dark:text-stone-300">
               {selectedTradeIds.size > 0
                 ? `${selectedTradeIds.size} selected`
                 : 'Select trades to perform bulk actions'}
@@ -231,7 +231,7 @@ export default function TradeList() {
             <div className="flex items-center gap-2">
               <button
                 onClick={toggleSelectAll}
-                className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                className="app-secondary-btn px-3 py-1.5 text-sm"
               >
                 {allSelected ? 'Clear selection' : 'Select all'}
               </button>
@@ -244,8 +244,8 @@ export default function TradeList() {
               </button>
             </div>
           </div>
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-900">
+          <table className="min-w-full divide-y divide-stone-200 dark:divide-stone-700">
+            <thead className="bg-stone-50/90 dark:bg-stone-900/90">
               <tr>
                 <th className="px-4 py-3 text-left">
                   <input
@@ -253,36 +253,36 @@ export default function TradeList() {
                     aria-label="Select all trades"
                     checked={allSelected}
                     onChange={toggleSelectAll}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-stone-300 text-teal-700 focus:ring-teal-500"
                   />
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">
                   Date
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">
                   Symbol
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">
                   Direction
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">
                   Entry
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">
                   Exit
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">
                   Qty
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">
                   Net P&L
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">
                   Result
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-stone-200 bg-white/70 dark:divide-stone-700 dark:bg-stone-900/50">
               {trades.map(trade => (
                 <TradeRow
                   key={trade.id}
@@ -300,16 +300,16 @@ export default function TradeList() {
       {/* Bulk Delete Confirmation Modal */}
       {showBulkDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md">
-            <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Delete Selected Trades?</h2>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
+          <div className="app-panel max-w-md p-6">
+            <h2 className="mb-4 text-lg font-semibold dark:text-stone-100">Delete Selected Trades?</h2>
+            <p className="mb-6 text-stone-600 dark:text-stone-300">
               This will permanently delete {selectedTradeIds.size} selected trade
               {selectedTradeIds.size === 1 ? '' : 's'}. This action cannot be undone.
             </p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowBulkDeleteConfirm(false)}
-                className="px-4 py-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+                className="app-secondary-btn"
               >
                 Cancel
               </button>

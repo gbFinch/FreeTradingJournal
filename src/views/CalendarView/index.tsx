@@ -51,13 +51,13 @@ export default function CalendarView() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 pt-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-100">Calendar</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-100">Calendar</h1>
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8 text-gray-400">Loading...</div>
+        <div className="py-8 text-center text-stone-400">Loading...</div>
       ) : (
         <>
           <MonthlyCalendar
@@ -70,32 +70,32 @@ export default function CalendarView() {
 
           {/* Day Detail Sidebar */}
           {selectedDate && (
-            <div className="mt-6 bg-gray-800 rounded-lg p-4">
+            <div className="app-panel mt-6 p-4">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-100">
+                <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
                   {format(parseISO(selectedDate), 'MMMM d, yyyy')}
                 </h2>
                 <button
                   onClick={handleCloseDetail}
-                  className="text-gray-400 hover:text-gray-300"
+                  className="text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
                 >
                   Close
                 </button>
               </div>
 
               {dayTrades.length === 0 ? (
-                <p className="text-gray-400">No trades on this day.</p>
+                <p className="text-stone-500 dark:text-stone-400">No trades on this day.</p>
               ) : (
                 <div className="space-y-2">
                   {dayTrades.map(trade => (
                     <button
                       key={trade.id}
                       onClick={() => navigate(`/trades/${trade.id}`)}
-                      className="w-full flex justify-between items-center p-2 bg-gray-700 rounded hover:bg-gray-600 transition-colors cursor-pointer text-left"
+                      className="flex w-full cursor-pointer items-center justify-between rounded-xl border border-stone-200 bg-stone-50 p-2 text-left transition-colors hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800/70 dark:hover:bg-stone-700"
                     >
                       <div>
-                        <span className="font-medium text-gray-100">{trade.symbol}</span>
-                        <span className="ml-2 text-sm text-gray-400">
+                        <span className="font-medium text-stone-900 dark:text-stone-100">{trade.symbol}</span>
+                        <span className="ml-2 text-sm text-stone-500 dark:text-stone-400">
                           {trade.direction.toUpperCase()}
                         </span>
                       </div>
@@ -106,7 +106,7 @@ export default function CalendarView() {
                             ? 'text-green-400'
                             : (trade.net_pnl ?? 0) < 0
                             ? 'text-red-400'
-                            : 'text-gray-400'
+                            : 'text-stone-400'
                         )}
                       >
                         ${trade.net_pnl?.toFixed(2) ?? '0.00'}

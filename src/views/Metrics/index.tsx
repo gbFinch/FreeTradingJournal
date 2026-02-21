@@ -21,7 +21,7 @@ function kpiValueClass(value: number): string {
   if (value < 0) {
     return 'text-red-600 dark:text-red-400';
   }
-  return 'text-gray-900 dark:text-gray-100';
+  return 'text-stone-900 dark:text-stone-100';
 }
 
 function SegmentToggle({
@@ -36,14 +36,14 @@ function SegmentToggle({
   rightLabel: string;
 }) {
   return (
-    <div className="inline-flex bg-gray-100 dark:bg-gray-900/50 rounded-lg p-1 gap-1">
+    <div className="inline-flex gap-1 rounded-xl bg-stone-100 p-1 dark:bg-stone-900/70">
       <button
         type="button"
         onClick={() => onChange('tradeCount')}
         className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
           mode === 'tradeCount'
-            ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-            : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+            ? 'bg-white text-stone-900 shadow-sm dark:bg-stone-700 dark:text-stone-100'
+            : 'text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200'
         }`}
       >
         {leftLabel}
@@ -53,8 +53,8 @@ function SegmentToggle({
         onClick={() => onChange('pnl')}
         className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
           mode === 'pnl'
-            ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-            : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+            ? 'bg-white text-stone-900 shadow-sm dark:bg-stone-700 dark:text-stone-100'
+            : 'text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200'
         }`}
       >
         {rightLabel}
@@ -126,17 +126,17 @@ export default function Metrics() {
 
   if (isLoading && trades.length === 0) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Metrics</h1>
-        <div className="text-gray-500 dark:text-gray-400">Loading metrics...</div>
+      <div className="p-6 pt-8">
+        <h1 className="mb-6 text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-100">Metrics</h1>
+        <div className="text-stone-500 dark:text-stone-400">Loading metrics...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Metrics</h1>
+      <div className="p-6 pt-8">
+        <h1 className="mb-6 text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-100">Metrics</h1>
         <div className="text-red-600 dark:text-red-400">Failed to load metrics: {error}</div>
       </div>
     );
@@ -144,9 +144,9 @@ export default function Metrics() {
 
   if (!isLoading && trades.length === 0) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Metrics</h1>
-        <div className="text-center py-16 text-gray-500 dark:text-gray-400">
+      <div className="p-6 pt-8">
+        <h1 className="mb-6 text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-100">Metrics</h1>
+        <div className="py-16 text-center text-stone-500 dark:text-stone-400">
           <p>No trades found.</p>
           <p className="mt-2">Add trades to see weekday distribution metrics.</p>
         </div>
@@ -155,25 +155,25 @@ export default function Metrics() {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Metrics</h1>
+    <div className="p-6 pt-8">
+      <h1 className="mb-6 text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-100">Metrics</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total trades</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{totalTrades}</p>
+        <section className="app-panel p-4">
+          <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">Total trades</p>
+          <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{totalTrades}</p>
         </section>
-        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Net P&amp;L</p>
+        <section className="app-panel p-4">
+          <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">Net P&amp;L</p>
           <p className={`text-2xl font-bold ${kpiValueClass(totalNetPnl)}`}>{formatCurrency(totalNetPnl)}</p>
         </section>
-        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Win rate</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{winRate.toFixed(1)}%</p>
+        <section className="app-panel p-4">
+          <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">Win rate</p>
+          <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{winRate.toFixed(1)}%</p>
         </section>
-        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Profit factor</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <section className="app-panel p-4">
+          <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">Profit factor</p>
+          <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">
             {profitFactor !== null && isFinite(profitFactor) ? profitFactor.toFixed(2) : 'N/A'}
           </p>
           <p className={`text-xs mt-1 ${kpiValueClass(expectancy)}`}>Expectancy {formatCurrency(expectancy)}</p>
@@ -181,9 +181,9 @@ export default function Metrics() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <section className="app-panel p-4">
           <div className="flex items-center justify-between gap-3 mb-4">
-            <h2 className="text-lg font-semibold dark:text-gray-100">Weekday Performance</h2>
+            <h2 className="text-lg font-semibold dark:text-stone-100">Weekday Performance</h2>
             <SegmentToggle
               mode={weekdayMode}
               onChange={setWeekdayMode}
@@ -213,13 +213,13 @@ export default function Metrics() {
                 />
                 <Bar
                   dataKey={weekdayMode}
-                  fill={weekdayMode === 'tradeCount' ? '#2563EB' : '#10B981'}
+                  fill={weekdayMode === 'tradeCount' ? '#0f766e' : '#16a34a'}
                   radius={[4, 4, 0, 0]}
                   activeBar={isDark ? { fillOpacity: 0.85, stroke: '#111827', strokeWidth: 1 } : { fillOpacity: 0.9 }}
                 >
                   {weekdayMode === 'pnl' ? (
                     weekdayMetrics.map((entry) => (
-                      <Cell key={entry.day} fill={entry.pnl >= 0 ? '#10B981' : '#EF4444'} />
+                      <Cell key={entry.day} fill={entry.pnl >= 0 ? '#16a34a' : '#dc2626'} />
                     ))
                   ) : null}
                   {weekdayMode === 'tradeCount' ? (
@@ -236,9 +236,9 @@ export default function Metrics() {
           </div>
         </section>
 
-        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <section className="app-panel p-4">
           <div className="flex items-center justify-between gap-3 mb-4">
-            <h2 className="text-lg font-semibold dark:text-gray-100">Hourly Performance</h2>
+            <h2 className="text-lg font-semibold dark:text-stone-100">Hourly Performance</h2>
             <SegmentToggle
               mode={hourlyMode}
               onChange={setHourlyMode}
@@ -269,12 +269,12 @@ export default function Metrics() {
                 <Bar
                   dataKey={hourlyMode}
                   radius={[4, 4, 0, 0]}
-                  fill={hourlyMode === 'tradeCount' ? '#7C3AED' : '#10B981'}
+                  fill={hourlyMode === 'tradeCount' ? '#d97706' : '#16a34a'}
                   activeBar={isDark ? { fillOpacity: 0.8, stroke: '#111827', strokeWidth: 1 } : { fillOpacity: 0.9 }}
                 >
                   {hourlyMode === 'pnl' ? (
                     hourlyMetrics.map((entry) => (
-                      <Cell key={entry.hourLabel} fill={entry.pnl >= 0 ? '#10B981' : '#EF4444'} />
+                      <Cell key={entry.hourLabel} fill={entry.pnl >= 0 ? '#16a34a' : '#dc2626'} />
                     ))
                   ) : null}
                 </Bar>
@@ -283,10 +283,10 @@ export default function Metrics() {
           </div>
         </section>
 
-        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 xl:col-span-2">
+        <section className="app-panel p-4 xl:col-span-2">
           <div className="flex items-center justify-between gap-3 mb-4">
-            <h2 className="text-lg font-semibold dark:text-gray-100">P&amp;L by Ticker</h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <h2 className="text-lg font-semibold dark:text-stone-100">P&amp;L by Ticker</h2>
+            <p className="text-xs text-stone-500 dark:text-stone-400">
               Top {MAX_TICKER_BARS} by absolute move
             </p>
           </div>
@@ -319,7 +319,7 @@ export default function Metrics() {
                   activeBar={isDark ? { fillOpacity: 0.8, stroke: '#111827', strokeWidth: 1 } : { fillOpacity: 0.9 }}
                 >
                   {topTickerMetrics.map((entry) => (
-                    <Cell key={entry.ticker} fill={entry.pnl >= 0 ? '#10B981' : '#EF4444'} />
+                    <Cell key={entry.ticker} fill={entry.pnl >= 0 ? '#16a34a' : '#dc2626'} />
                   ))}
                 </Bar>
               </BarChart>

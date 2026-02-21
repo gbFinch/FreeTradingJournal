@@ -1,5 +1,5 @@
 # Product Requirements Document (PRD)
-## Trading Journal Application (competitor-inspired)
+## Trading Journal Application (MVP Scope)
 
 ---
 
@@ -14,7 +14,7 @@ Build a personal trading journal application that replaces Excel-based journalin
 - Visualizing performance over time (calendar, charts)
 - Providing actionable trading metrics (daily, monthly, yearly)
 
-The product is inspired by **other journaling tools**, but intentionally limited in scope for v1.
+The product is intentionally limited in scope for v1.
 
 ### 1.3 Target Release
 v1 (MVP)
@@ -203,10 +203,10 @@ Existing solutions (e.g., other journaling tools) are feature-rich but complex a
 
 ---
 
-## 13. Competitive Reference
+## 13. Product Positioning
 
-Closest competitor:
-- other journaling tools
+Comparable products:
+- desktop and web-based trading journals
 
 This product intentionally prioritizes:
 - Simplicity

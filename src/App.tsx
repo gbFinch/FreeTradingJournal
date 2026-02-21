@@ -14,7 +14,7 @@ function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+      className="rounded-xl border border-stone-300 p-2 text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
       title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       {theme === 'dark' ? (
@@ -46,12 +46,12 @@ function Sidebar({ onAddTrade }: SidebarProps) {
     <aside
       className={`${
         isCollapsed ? 'w-[52px]' : 'w-64'
-      } relative z-10 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white flex flex-col transition-[width] duration-300 ease-in-out border-r border-gray-200 dark:border-gray-700`}
+      } relative z-10 m-3 mr-0 app-panel text-stone-900 dark:text-stone-100 flex flex-col transition-[width] duration-300 ease-in-out`}
     >
       {/* Floating toggle button */}
       <button
         onClick={toggleCollapsed}
-        className="absolute top-5 -right-3 z-20 w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full shadow-md flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+        className="absolute top-5 -right-3 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-stone-300 bg-stone-100 shadow-sm transition-colors hover:bg-stone-200 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
         title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
@@ -66,15 +66,18 @@ function Sidebar({ onAddTrade }: SidebarProps) {
       </button>
 
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-center overflow-hidden">
-        <h1 className={`text-xl font-bold ${textClass}`}>Trading Journal</h1>
+      <div className="flex items-center justify-center overflow-hidden border-b border-stone-200 p-4 dark:border-stone-800">
+        <div className="text-center">
+          <h1 className={`text-xl font-bold tracking-tight ${textClass}`}>Trading Journal</h1>
+          {!isCollapsed && <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">Local-first</p>}
+        </div>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-2 overflow-hidden">
         <button
           onClick={onAddTrade}
-          className="mb-4 p-2 w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-2 font-medium"
+          className="mb-4 flex w-full items-center gap-2 rounded-xl bg-amber-600 p-2 font-medium text-white transition-colors hover:bg-amber-700"
           title="Add Trade"
         >
           <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -90,8 +93,8 @@ function Sidebar({ onAddTrade }: SidebarProps) {
               className={({ isActive }) =>
                 `flex items-center gap-2 p-2 w-full rounded-lg ${
                   isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'
+                    ? 'bg-teal-700 text-white'
+                    : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
                 }`
               }
             >
@@ -108,8 +111,8 @@ function Sidebar({ onAddTrade }: SidebarProps) {
               className={({ isActive }) =>
                 `flex items-center gap-2 p-2 w-full rounded-lg ${
                   isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'
+                    ? 'bg-teal-700 text-white'
+                    : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
                 }`
               }
             >
@@ -126,8 +129,8 @@ function Sidebar({ onAddTrade }: SidebarProps) {
               className={({ isActive }) =>
                 `flex items-center gap-2 p-2 w-full rounded-lg ${
                   isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'
+                    ? 'bg-teal-700 text-white'
+                    : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
                 }`
               }
             >
@@ -144,8 +147,8 @@ function Sidebar({ onAddTrade }: SidebarProps) {
               className={({ isActive }) =>
                 `flex items-center gap-2 p-2 w-full rounded-lg ${
                   isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'
+                    ? 'bg-teal-700 text-white'
+                    : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
                 }`
               }
             >
@@ -159,7 +162,7 @@ function Sidebar({ onAddTrade }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="p-2 border-t border-gray-200 dark:border-gray-800 text-sm text-gray-500 flex items-center justify-center gap-2 overflow-hidden">
+      <div className="flex items-center justify-center gap-2 overflow-hidden border-t border-stone-200 p-2 text-sm text-stone-500 dark:border-stone-800 dark:text-stone-400">
         {!isCollapsed && <span className={textClass}>v0.1.0</span>}
         <ThemeToggle />
       </div>
@@ -181,9 +184,9 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex min-h-screen bg-transparent">
         <Sidebar onAddTrade={() => setShowTradeForm(true)} />
-        <main className="flex-1 overflow-auto z-0">
+        <main className="z-0 flex-1 overflow-auto pr-3 pb-3">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/calendar" element={<CalendarView />} />
@@ -196,12 +199,12 @@ function App() {
         {/* Add Trade Modal */}
         {showTradeForm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-auto">
-              <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
-                <h2 className="text-lg font-semibold dark:text-gray-100">New Trade</h2>
+            <div className="app-panel max-h-[90vh] w-full max-w-2xl overflow-auto">
+              <div className="flex items-center justify-between border-b border-stone-200 p-4 dark:border-stone-700">
+                <h2 className="text-lg font-semibold dark:text-stone-100">New Trade</h2>
                 <button
                   onClick={() => setShowTradeForm(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
                 >
                   &times;
                 </button>

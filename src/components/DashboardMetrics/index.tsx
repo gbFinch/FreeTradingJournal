@@ -17,7 +17,7 @@ function formatCurrency(value: number): string {
 // Icon: Dollar sign for P&L
 function DollarIcon() {
   return (
-    <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+    <svg className="w-4 h-4 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   );
@@ -26,7 +26,7 @@ function DollarIcon() {
 // Icon: Chart/scale for profit factor
 function ScaleIcon() {
   return (
-    <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+    <svg className="w-4 h-4 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
     </svg>
   );
@@ -35,7 +35,7 @@ function ScaleIcon() {
 // Icon: Percentage/target for win rate
 function TargetIcon() {
   return (
-    <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+    <svg className="w-4 h-4 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
       <circle cx="12" cy="12" r="10" />
       <circle cx="12" cy="12" r="6" />
       <circle cx="12" cy="12" r="2" />
@@ -46,7 +46,7 @@ function TargetIcon() {
 // Icon: Trending up/down for avg win/loss
 function TrendIcon() {
   return (
-    <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+    <svg className="w-4 h-4 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
     </svg>
   );
@@ -55,7 +55,7 @@ function TrendIcon() {
 // Icon: Calculator for expectancy
 function CalculatorIcon() {
   return (
-    <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+    <svg className="w-4 h-4 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
     </svg>
   );
@@ -125,16 +125,16 @@ export default function DashboardMetrics({ metrics }: DashboardMetricsProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
       {/* Net P&L Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg px-4 py-3 shadow-sm dark:shadow-none">
+      <div className="app-panel px-4 py-3">
         <div className="flex items-center gap-1.5 mb-1">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Net P&L</span>
+          <span className="text-xs text-stone-500 dark:text-stone-400">Net P&L</span>
           <DollarIcon />
-          <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">{metrics.trade_count}</span>
+          <span className="ml-auto text-xs text-stone-400 dark:text-stone-500">{metrics.trade_count}</span>
         </div>
         <div className="h-11 flex items-center">
           <span className={clsx(
             'text-xl font-bold',
-            metrics.total_net_pnl > 0 ? 'text-green-600 dark:text-green-400' : metrics.total_net_pnl < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-300'
+            metrics.total_net_pnl > 0 ? 'text-green-600 dark:text-green-400' : metrics.total_net_pnl < 0 ? 'text-red-600 dark:text-red-400' : 'text-stone-600 dark:text-stone-300'
           )}>
             {formatCurrency(metrics.total_net_pnl)}
           </span>
@@ -142,13 +142,13 @@ export default function DashboardMetrics({ metrics }: DashboardMetricsProps) {
       </div>
 
       {/* Profit Factor Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg px-4 py-3 shadow-sm dark:shadow-none">
+      <div className="app-panel px-4 py-3">
         <div className="flex items-center gap-1.5 mb-1">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Profit factor</span>
+          <span className="text-xs text-stone-500 dark:text-stone-400">Profit factor</span>
           <ScaleIcon />
         </div>
         <div className="h-11 flex items-center justify-between">
-          <span className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          <span className="text-xl font-bold text-stone-900 dark:text-stone-100">
             {metrics.profit_factor !== null && isFinite(metrics.profit_factor)
               ? metrics.profit_factor.toFixed(2)
               : 'N/A'}
@@ -158,20 +158,20 @@ export default function DashboardMetrics({ metrics }: DashboardMetricsProps) {
       </div>
 
       {/* Trade Win % Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg px-4 py-3 shadow-sm dark:shadow-none">
+      <div className="app-panel px-4 py-3">
         <div className="flex items-center gap-1.5 mb-1">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Trade win %</span>
+          <span className="text-xs text-stone-500 dark:text-stone-400">Trade win %</span>
           <TargetIcon />
         </div>
         <div className="h-11 flex items-center justify-between">
-          <span className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          <span className="text-xl font-bold text-stone-900 dark:text-stone-100">
             {winRate.toFixed(2)}%
           </span>
           <div className="flex flex-col items-center">
             <GaugeChart percent={winRate} />
             <div className="flex items-center gap-2 text-[10px] -mt-1">
               <span className="text-red-600 dark:text-red-400">{metrics.loss_count}</span>
-              <span className="text-gray-400 dark:text-gray-500">{metrics.breakeven_count}</span>
+              <span className="text-stone-400 dark:text-stone-500">{metrics.breakeven_count}</span>
               <span className="text-green-600 dark:text-green-400">{metrics.win_count}</span>
             </div>
           </div>
@@ -179,13 +179,13 @@ export default function DashboardMetrics({ metrics }: DashboardMetricsProps) {
       </div>
 
       {/* Avg Win/Loss Trade Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg px-4 py-3 shadow-sm dark:shadow-none">
+      <div className="app-panel px-4 py-3">
         <div className="flex items-center gap-1.5 mb-1">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Avg win/loss trade</span>
+          <span className="text-xs text-stone-500 dark:text-stone-400">Avg win/loss trade</span>
           <TrendIcon />
         </div>
         <div className="h-11 flex items-center gap-3">
-          <span className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          <span className="text-xl font-bold text-stone-900 dark:text-stone-100">
             {avgWinLossRatio !== null ? avgWinLossRatio.toFixed(2) : 'N/A'}
           </span>
           <div className="flex-1">
@@ -197,9 +197,9 @@ export default function DashboardMetrics({ metrics }: DashboardMetricsProps) {
       </div>
 
       {/* Trade Expectancy Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg px-4 py-3 shadow-sm dark:shadow-none">
+      <div className="app-panel px-4 py-3">
         <div className="flex items-center gap-1.5 mb-1">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Trade expectancy</span>
+          <span className="text-xs text-stone-500 dark:text-stone-400">Trade expectancy</span>
           <CalculatorIcon />
         </div>
         <div className="h-11 flex items-center">
@@ -209,7 +209,7 @@ export default function DashboardMetrics({ metrics }: DashboardMetricsProps) {
               ? 'text-green-600 dark:text-green-400'
               : metrics.expectancy !== null && metrics.expectancy < 0
               ? 'text-red-600 dark:text-red-400'
-              : 'text-gray-600 dark:text-gray-300'
+              : 'text-stone-600 dark:text-stone-300'
           )}>
             {metrics.expectancy !== null ? formatCurrency(metrics.expectancy) : 'N/A'}
           </span>
