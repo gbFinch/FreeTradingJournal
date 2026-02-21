@@ -13,6 +13,7 @@ Built with **Tauri + React + TypeScript + Rust + SQLite**.
 
 - [Why This Exists](#why-this-exists)
 - [What You Can Do](#what-you-can-do)
+- [Affiliation](#affiliation)
 - [Screenshots](#screenshots)
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
@@ -67,6 +68,10 @@ Trading Journal focuses on:
 
 - Light/dark theme toggle
 - Desktop-first native app experience
+
+## Affiliation
+
+This is an independent open-source project and is not affiliated with, endorsed by, or sponsored by any broker or journaling platform.
 
 ## Screenshots
 
