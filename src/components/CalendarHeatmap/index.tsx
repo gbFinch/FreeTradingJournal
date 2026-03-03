@@ -5,6 +5,7 @@ import type { DailyPerformance } from '@/types';
 
 interface CalendarHeatmapProps {
   data: DailyPerformance[];
+  onDayClick?: (date: string) => void;
 }
 
 interface DayCell {
@@ -74,7 +75,7 @@ function calculateMonthStats(days: DayCell[]): MonthStats {
   };
 }
 
-export default function CalendarHeatmap({ data }: CalendarHeatmapProps) {
+export default function CalendarHeatmap({ data, onDayClick }: CalendarHeatmapProps) {
   const monthsData = useMemo(() => {
     // Create lookup map for quick access
     const dataMap = new Map(data.map(d => [d.date, d]));
@@ -206,6 +207,7 @@ export default function CalendarHeatmap({ data }: CalendarHeatmapProps) {
                         !day.isEmpty && day.tradeCount > 0 && 'hover:opacity-90 cursor-pointer'
                       )}
                       title={day.isEmpty ? '' : `${day.date}: ${day.pnl >= 0 ? '+' : ''}$${day.pnl.toFixed(2)} (${day.tradeCount} trades)`}
+                      onClick={!day.isEmpty && day.tradeCount > 0 && onDayClick ? () => onDayClick(day.date) : undefined}
                     >
                       {/* Date number - top right, hidden when very small */}
                       {!day.isEmpty && (

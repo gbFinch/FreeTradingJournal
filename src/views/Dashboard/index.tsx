@@ -1,16 +1,31 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { endOfMonth, format, startOfMonth } from 'date-fns';
 import { useMetricsStore } from '@/stores';
+import { getTrades } from '@/api/trades';
 import DashboardMetrics from '@/components/DashboardMetrics';
 import DashboardSkeleton from '@/components/DashboardSkeleton';
 import EquityCurve from '@/components/EquityCurve';
 import CalendarHeatmap from '@/components/CalendarHeatmap';
 import MonthlyPnLGrid from '@/components/MonthlyPnLGrid';
 import PeriodSelector from '@/components/PeriodSelector';
+import TradeDrilldownModal from '@/components/TradeDrilldownModal';
+import type { TradeWithDerived } from '@/types';
+
+interface DrilldownPeriod {
+  title: string;
+  startDate: string;
+  endDate: string;
+}
 
 export default function Dashboard() {
-  const { periodMetrics, equityCurve, dailyPerformance, fetchAll, isLoading, setPeriodType, periodType, selectedMonth } = useMetricsStore();
+  const navigate = useNavigate();
+  const { periodMetrics, equityCurve, dailyPerformance, fetchAll, isLoading, setPeriodType, periodType, selectedMonth, accountId } = useMetricsStore();
   const currentYear = new Date().getFullYear();
   const isMonthlyView = periodType === 'all' || periodType === 'ytd';
+  const [drilldown, setDrilldown] = useState<DrilldownPeriod | null>(null);
+  const [drilldownTrades, setDrilldownTrades] = useState<TradeWithDerived[]>([]);
+  const [isDrilldownLoading, setIsDrilldownLoading] = useState(false);
 
   const monthlyGridData = useMemo(() => {
     if (periodType !== 'ytd') {
@@ -46,6 +61,43 @@ export default function Dashboard() {
     setPeriodType('month');
     fetchAll();
   }, [setPeriodType, fetchAll]);
+
+  const openDrilldown = async (period: DrilldownPeriod) => {
+    setIsDrilldownLoading(true);
+    try {
+      const trades = await getTrades({
+        accountId: accountId ?? undefined,
+        startDate: period.startDate,
+        endDate: period.endDate,
+      });
+      const sortedTrades = [...trades].sort((a, b) => b.trade_date.localeCompare(a.trade_date));
+      setDrilldownTrades(sortedTrades);
+      setDrilldown(period);
+    } catch {
+      setDrilldownTrades([]);
+      setDrilldown(period);
+    } finally {
+      setIsDrilldownLoading(false);
+    }
+  };
+
+  const handleDayDrilldown = async (date: string) => {
+    const title = `Trades for ${format(new Date(`${date}T00:00:00`), 'MMMM d, yyyy')}`;
+    await openDrilldown({ title, startDate: date, endDate: date });
+  };
+
+  const handleMonthDrilldown = async (year: number, month: number) => {
+    const monthDate = new Date(year, month - 1, 1);
+    const startDate = format(startOfMonth(monthDate), 'yyyy-MM-dd');
+    const endDate = format(endOfMonth(monthDate), 'yyyy-MM-dd');
+    const title = `Trades for ${format(monthDate, 'MMMM yyyy')}`;
+    await openDrilldown({ title, startDate, endDate });
+  };
+
+  const handleCloseDrilldown = () => {
+    setDrilldown(null);
+    setDrilldownTrades([]);
+  };
 
   // Only show skeleton on initial load (no existing data)
   const showSkeleton = isLoading && !periodMetrics;
@@ -84,9 +136,9 @@ export default function Dashboard() {
                 {isMonthlyView ? 'Monthly P&L' : 'Daily P&L'}
               </h2>
               {isMonthlyView ? (
-                <MonthlyPnLGrid data={monthlyGridData} />
+                <MonthlyPnLGrid data={monthlyGridData} onMonthClick={handleMonthDrilldown} />
               ) : (
-                <CalendarHeatmap data={dailyPerformance} />
+                <CalendarHeatmap data={dailyPerformance} onDayClick={handleDayDrilldown} />
               )}
             </div>
           </div>
@@ -99,6 +151,15 @@ export default function Dashboard() {
           <p className="mt-2">Add some trades to see your metrics!</p>
         </div>
       )}
+
+      <TradeDrilldownModal
+        isOpen={drilldown !== null}
+        title={drilldown?.title ?? ''}
+        trades={drilldownTrades}
+        isLoading={isDrilldownLoading}
+        onClose={handleCloseDrilldown}
+        onTradeClick={(tradeId) => navigate(`/trades/${tradeId}`)}
+      />
     </div>
   );
 }

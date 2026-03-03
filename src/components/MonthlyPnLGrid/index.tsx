@@ -7,17 +7,23 @@ import { aggregateDailyToMonthly, groupByYear, calculateYearTotal, formatCurrenc
 
 interface MonthlyPnLGridProps {
   data: DailyPerformance[];
+  onMonthClick?: (year: number, month: number) => void;
 }
 
-export default function MonthlyPnLGrid({ data }: MonthlyPnLGridProps) {
+export default function MonthlyPnLGrid({ data, onMonthClick }: MonthlyPnLGridProps) {
   const { setSelectedMonth, fetchAll } = useMetricsStore();
 
   const handleMonthClick = useCallback((year: number, month: number) => {
+    if (onMonthClick) {
+      onMonthClick(year, month);
+      return;
+    }
+
     // Create a date for the first day of the selected month
     const selectedDate = new Date(year, month - 1, 1);
     setSelectedMonth(selectedDate);
     fetchAll();
-  }, [setSelectedMonth, fetchAll]);
+  }, [fetchAll, onMonthClick, setSelectedMonth]);
 
   const { yearlyData, grandTotal, years } = useMemo(() => {
     const monthlyData = aggregateDailyToMonthly(data);

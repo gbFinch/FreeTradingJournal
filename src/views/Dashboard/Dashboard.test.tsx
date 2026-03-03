@@ -4,6 +4,12 @@ import Dashboard from "./index";
 import { useMetricsStore } from "@/stores";
 import type { PeriodMetrics, EquityPoint, DailyPerformance } from "@/types";
 
+const mockNavigate = vi.fn();
+
+vi.mock("react-router-dom", () => ({
+  useNavigate: () => mockNavigate,
+}));
+
 vi.mock("@/stores", () => ({
   useMetricsStore: vi.fn(),
 }));
@@ -32,6 +38,10 @@ vi.mock("@/components/MonthlyPnLGrid", () => ({
 
 vi.mock("@/components/DashboardSkeleton", () => ({
   default: () => <div data-testid="dashboard-skeleton">Loading skeleton</div>,
+}));
+
+vi.mock("@/components/TradeDrilldownModal", () => ({
+  default: () => null,
 }));
 
 const mockPeriodMetrics: PeriodMetrics = {
