@@ -71,6 +71,7 @@ describe("TradeForm", () => {
       expect(screen.getByPlaceholderText("0.00")).toBeInTheDocument();
       expect(screen.getByPlaceholderText("Breakout")).toBeInTheDocument();
       expect(screen.getByPlaceholderText("Trade notes...")).toBeInTheDocument();
+      expect(screen.getByLabelText(/entry time/i)).toBeInTheDocument();
       // Custom Select components - check default values are shown
       expect(screen.getByText("Long")).toBeInTheDocument();
       // Status is now auto-computed (shown as Open initially since no exits)
@@ -196,6 +197,7 @@ describe("TradeForm", () => {
       );
 
       await user.click(screen.getByText("Parse & Fill"));
+      expect(screen.getByLabelText(/entry time/i)).toHaveValue("16:18");
       await user.click(screen.getByText("Create Trade"));
 
       expect(mockCreateTrade).toHaveBeenCalledWith(
@@ -205,6 +207,7 @@ describe("TradeForm", () => {
           direction: "long",
           quantity: 20,
           entry_price: 2.44,
+          entry_time: "16:18",
           fees: 13.97,
           exits: expect.arrayContaining([
             expect.objectContaining({

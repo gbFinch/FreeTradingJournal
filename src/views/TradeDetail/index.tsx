@@ -103,6 +103,21 @@ export default function TradeDetail() {
   // Separate entries and exits
   const entries = executions.filter(e => e.execution_type === 'entry');
   const exits = executions.filter(e => e.execution_type === 'exit');
+  const fallbackEntry: Execution[] =
+    executionsLoading || entries.length > 0 || !trade.quantity
+      ? []
+      : [{
+          execution_type: 'entry',
+          execution_date: trade.trade_date,
+          execution_time: trade.entry_time,
+          quantity: trade.quantity,
+          price: trade.entry_price,
+          fees: trade.fees ?? 0,
+          exchange: null,
+          broker_execution_id: '',
+        }];
+  const displayEntries = entries.length > 0 ? entries : fallbackEntry;
+  const showExecutionsSection = executionsLoading || displayEntries.length > 0 || exits.length > 0;
 
   return (
     <div className="p-6 max-w-3xl">
@@ -281,7 +296,7 @@ export default function TradeDetail() {
       </div>
 
       {/* Executions Section */}
-      {(entries.length > 0 || exits.length > 0) && (
+      {showExecutionsSection && (
         <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <h2 className="text-lg font-semibold dark:text-gray-100 mb-4">Executions</h2>
 
@@ -290,10 +305,10 @@ export default function TradeDetail() {
           ) : (
             <div className="space-y-4">
               {/* Entries */}
-              {entries.length > 0 && (
+              {displayEntries.length > 0 && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                    Entries ({entries.length})
+                    Entries ({displayEntries.length})
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -307,7 +322,7 @@ export default function TradeDetail() {
                         </tr>
                       </thead>
                       <tbody>
-                        {entries.map((exec, i) => (
+                        {displayEntries.map((exec, i) => (
                           <tr key={i} className="border-b dark:border-gray-700 last:border-0">
                             <td className="py-2 dark:text-gray-300">
                               {format(new Date(exec.execution_date), 'MMM d, yyyy')}

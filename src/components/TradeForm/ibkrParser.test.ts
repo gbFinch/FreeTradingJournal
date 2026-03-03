@@ -17,6 +17,7 @@ describe('parseIbkrPaste', () => {
     expect(parsed.direction).toBe('long');
     expect(parsed.quantity).toBe(20);
     expect(parsed.entryPrice).toBe(2.44);
+    expect(parsed.entry_time).toBe('16:18');
     expect(parsed.entryFees).toBe(13.97);
     expect(parsed.exits).toHaveLength(3);
     expect(parsed.exits[0]).toEqual({
@@ -39,6 +40,7 @@ describe('parseIbkrPaste', () => {
     expect(parsed.direction).toBe('short');
     expect(parsed.quantity).toBe(100);
     expect(parsed.entryPrice).toBe(220);
+    expect(parsed.entry_time).toBe('10:01');
     expect(parsed.entryFees).toBe(1.25);
     expect(parsed.exits).toHaveLength(2);
   });

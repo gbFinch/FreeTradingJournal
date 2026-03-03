@@ -18,6 +18,7 @@ export interface ParsedIbkrTradeDraft {
   direction: Direction;
   quantity: number;
   entryPrice: number;
+  entry_time: string;
   entryFees: number;
   exits: Array<{
     exit_time: string;
@@ -113,6 +114,9 @@ export function parseIbkrPaste(text: string): ParsedIbkrTradeDraft {
   const quantity = entries.reduce((sum, row) => sum + row.quantity, 0);
   const weightedEntry = entries.reduce((sum, row) => sum + row.quantity * row.price, 0);
   const entryPrice = weightedEntry / quantity;
+  const entry_time = [...entries]
+    .sort((a, b) => a.sortTime.localeCompare(b.sortTime))[0]
+    .time;
   const entryFees = entries.reduce((sum, row) => sum + row.fees, 0);
 
   return {
@@ -121,6 +125,7 @@ export function parseIbkrPaste(text: string): ParsedIbkrTradeDraft {
     direction,
     quantity,
     entryPrice,
+    entry_time,
     entryFees,
     exits: exits.map((row) => ({
       exit_time: row.time,

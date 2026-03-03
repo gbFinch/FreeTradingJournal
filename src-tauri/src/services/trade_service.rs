@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use sqlx::sqlite::SqlitePool;
 use crate::calculations::calculate_derived_fields;
-use crate::models::{CreateTradeInput, ExitExecution, Status, Trade, TradeWithDerived, UpdateTradeInput, TradeExecutionRecord};
+use crate::models::{CreateTradeInput, Status, Trade, TradeWithDerived, UpdateTradeInput, TradeExecutionRecord};
 use crate::repository::{InstrumentRepository, TradeRepository};
 
 pub struct TradeService;
@@ -65,10 +65,40 @@ impl TradeService {
             .map_err(|e| format!("Failed to create trade (user={}, account={}, instrument={}): {}",
                 user_id, input.account_id, instrument.id, e))?;
 
+        // Insert entry execution record for manual trades.
+        let entry_quantity = input.quantity.unwrap_or_else(|| {
+            input.exits.as_ref()
+                .map(|exits| exits.iter().map(|e| e.quantity).sum())
+                .unwrap_or(0.0)
+        });
+        if entry_quantity > 0.0 {
+            Self::insert_execution(
+                pool,
+                &trade.id,
+                "entry",
+                input.trade_date,
+                input.entry_time.as_deref(),
+                entry_quantity,
+                input.entry_price,
+                input.fees.unwrap_or(0.0),
+            )
+            .await
+            .map_err(|e| format!("Failed to insert entry execution: {}", e))?;
+        }
+
         // Insert exit executions if provided
         if let Some(ref exits) = input.exits {
             for (i, exit) in exits.iter().enumerate() {
-                Self::insert_exit_execution(pool, &trade.id, exit)
+                Self::insert_execution(
+                    pool,
+                    &trade.id,
+                    "exit",
+                    exit.exit_date,
+                    exit.exit_time.as_deref(),
+                    exit.quantity,
+                    exit.price,
+                    exit.fees.unwrap_or(0.0),
+                )
                     .await
                     .map_err(|e| format!("Failed to insert exit execution #{}: {}", i + 1, e))?;
             }
@@ -132,11 +162,16 @@ impl TradeService {
         ))
     }
 
-    /// Insert an exit execution into the database
-    async fn insert_exit_execution(
+    /// Insert an execution into the database
+    async fn insert_execution(
         pool: &SqlitePool,
         trade_id: &str,
-        exit: &ExitExecution,
+        execution_type: &str,
+        execution_date: NaiveDate,
+        execution_time: Option<&str>,
+        quantity: f64,
+        price: f64,
+        fees: f64,
     ) -> Result<(), sqlx::Error> {
         let id = uuid::Uuid::new_v4().to_string();
 
@@ -145,16 +180,17 @@ impl TradeService {
             INSERT INTO trade_executions (
                 id, trade_id, execution_type, execution_date, execution_time,
                 quantity, price, fees
-            ) VALUES (?, ?, 'exit', ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             "#
         )
         .bind(&id)
         .bind(trade_id)
-        .bind(exit.exit_date)
-        .bind(&exit.exit_time)
-        .bind(exit.quantity)
-        .bind(exit.price)
-        .bind(exit.fees.unwrap_or(0.0))
+        .bind(execution_type)
+        .bind(execution_date)
+        .bind(execution_time)
+        .bind(quantity)
+        .bind(price)
+        .bind(fees)
         .execute(pool)
         .await?;
 
@@ -492,7 +528,7 @@ mod tests {
 #[cfg(test)]
 mod integration_tests {
     use super::*;
-    use crate::models::{Direction, TradeResult};
+    use crate::models::{Direction, ExitExecution, TradeResult};
     use crate::test_utils::{
         create_test_db, setup_test_user_and_account, create_test_trade_input,
         create_losing_long_trade, create_open_trade,
@@ -525,6 +561,13 @@ mod integration_tests {
 
         // Result should be Win
         assert_eq!(trade.result, Some(TradeResult::Win));
+
+        // Manual trade creation should create an entry execution row.
+        let executions = TradeService::get_trade_executions(&pool, &trade.trade.id)
+            .await
+            .expect("Failed to get executions");
+        assert_eq!(executions.len(), 1);
+        assert_eq!(executions[0].execution_type, "entry");
     }
 
     #[tokio::test]
@@ -983,6 +1026,15 @@ mod integration_tests {
         // Net PnL: 1000 - 10 = 990
         assert!((trade.net_pnl.unwrap() - 990.0).abs() < 0.01);
         assert_eq!(trade.result, Some(TradeResult::Win));
+
+        // Should persist one entry and one exit execution.
+        let executions = TradeService::get_trade_executions(&pool, &trade.trade.id)
+            .await
+            .expect("Failed to get executions");
+        let entry_count = executions.iter().filter(|e| e.execution_type == "entry").count();
+        let exit_count = executions.iter().filter(|e| e.execution_type == "exit").count();
+        assert_eq!(entry_count, 1);
+        assert_eq!(exit_count, 1);
     }
 
     #[tokio::test]

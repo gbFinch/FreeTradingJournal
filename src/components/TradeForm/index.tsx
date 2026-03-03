@@ -32,6 +32,7 @@ export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel
   const [direction, setDirection] = useState<Direction>(trade?.direction ?? 'long');
   const [quantity, setQuantity] = useState(trade?.quantity?.toString() ?? '');
   const [entryPrice, setEntryPrice] = useState(trade?.entry_price?.toString() ?? '');
+  const [entryTime, setEntryTime] = useState(trade?.entry_time ?? '');
   const [stopLossPrice, setStopLossPrice] = useState(trade?.stop_loss_price?.toString() ?? '');
   const [entryFees, setEntryFees] = useState(trade?.fees?.toString() ?? '0');
   const [strategy, setStrategy] = useState(trade?.strategy ?? '');
@@ -105,6 +106,7 @@ export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel
       setDirection(parsed.direction);
       setQuantity(parsed.quantity.toString());
       setEntryPrice(parsed.entryPrice.toString());
+      setEntryTime(parsed.entry_time);
       setEntryFees(parsed.entryFees.toString());
       setExits(
         parsed.exits.map((exit) => ({
@@ -134,6 +136,7 @@ export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel
           direction,
           quantity: quantity ? parseFloat(quantity) : undefined,
           entry_price: entryPrice ? parseFloat(entryPrice) : undefined,
+          entry_time: entryTime || undefined,
           exit_price: exits.length > 0 ? exitStats.avgPrice : undefined,
           stop_loss_price: stopLossPrice ? parseFloat(stopLossPrice) : undefined,
           fees: parseFloat(entryFees) + exitStats.totalFees || undefined,
@@ -162,6 +165,7 @@ export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel
           direction,
           quantity: quantity ? parseFloat(quantity) : undefined,
           entry_price: parseFloat(entryPrice),
+          entry_time: entryTime || undefined,
           stop_loss_price: stopLossPrice ? parseFloat(stopLossPrice) : undefined,
           fees: parseFloat(entryFees) || undefined,
           strategy: strategy || undefined,
@@ -276,6 +280,19 @@ export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel
               { value: 'long', label: 'Long' },
               { value: 'short', label: 'Short' },
             ]}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Entry Time
+          </label>
+          <input
+            type="time"
+            aria-label="Entry Time"
+            value={entryTime}
+            onChange={(e) => setEntryTime(e.target.value)}
+            className={inputClass}
           />
         </div>
 

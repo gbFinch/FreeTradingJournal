@@ -191,6 +191,15 @@ describe("TradeDetail", () => {
       expect(screen.getByText("$998.00")).toBeInTheDocument();
     });
 
+    it("displays fallback entry execution when no execution rows exist", async () => {
+      render(<TradeDetail />);
+
+      expect(screen.getByText("Executions")).toBeInTheDocument();
+      expect(await screen.findByText("Entries (1)")).toBeInTheDocument();
+      expect(screen.getByText("Qty")).toBeInTheDocument();
+      expect(screen.getByText("Price")).toBeInTheDocument();
+    });
+
     it("displays R-Multiple", () => {
       render(<TradeDetail />);
 
