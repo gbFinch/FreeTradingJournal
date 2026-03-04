@@ -76,22 +76,28 @@ This is an independent open-source project and is not affiliated with, endorsed 
 ## Screenshots
 
 ### Dashboard
-![Dashboard screenshot](docs/screenshots/dashboard.png)
+<img src="docs/screenshots/dashboard.png" alt="Dashboard screenshot" width="1000" />
 
 ### Dashboard (All Time)
-![Dashboard all-time screenshot](docs/screenshots/dashboard_alltime.png)
+<img src="docs/screenshots/dashboard_alltime.png" alt="Dashboard all-time screenshot" width="1000" />
 
 ### Trades
-![Trades screenshot](docs/screenshots/trades.png)
+<img src="docs/screenshots/trades.png" alt="Trades screenshot" width="1000" />
+
+### Trade Details
+<img src="docs/screenshots/trades_details.png" alt="Trade details screenshot" width="1000" />
+
+### New Trade
+<img src="docs/screenshots/new-trade.png" alt="New trade screenshot" width="1000" />
 
 ### Import Preview (IBKR TLG)
-![Import preview screenshot](docs/screenshots/import-preview.png)
+<img src="docs/screenshots/import-preview.png" alt="Import preview screenshot" width="1000" />
 
 ### Calendar
-![Calendar screenshot](docs/screenshots/calendar.png)
+<img src="docs/screenshots/calendar.png" alt="Calendar screenshot" width="1000" />
 
 ### Metrics
-![Metrics screenshot](docs/screenshots/metrics.png)
+<img src="docs/screenshots/metrics.png" alt="Metrics screenshot" width="1000" />
 
 ## Tech Stack
 
