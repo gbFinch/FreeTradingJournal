@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import TradeForm from "./index";
 import { useTradesStore } from "@/stores";
-import type { TradeWithDerived } from "@/types";
+import type { Execution, TradeWithDerived } from "@/types";
 
 vi.mock("@/stores", () => ({
   useTradesStore: vi.fn(),
@@ -38,6 +38,39 @@ const mockTrade: TradeWithDerived = {
   r_multiple: 2,
   result: "win",
 };
+
+const mockExecutions: Execution[] = [
+  {
+    execution_type: "entry",
+    execution_date: "2024-01-15",
+    execution_time: "09:30",
+    quantity: 100,
+    price: 150,
+    fees: 0.5,
+    exchange: null,
+    broker_execution_id: "entry-1",
+  },
+  {
+    execution_type: "exit",
+    execution_date: "2024-01-15",
+    execution_time: "10:00",
+    quantity: 60,
+    price: 158,
+    fees: 0.25,
+    exchange: null,
+    broker_execution_id: "exit-1",
+  },
+  {
+    execution_type: "exit",
+    execution_date: "2024-01-15",
+    execution_time: "10:15",
+    quantity: 40,
+    price: 163,
+    fees: 0.75,
+    exchange: null,
+    broker_execution_id: "exit-2",
+  },
+];
 
 describe("TradeForm", () => {
   const mockCreateTrade = vi.fn();
@@ -282,6 +315,29 @@ describe("TradeForm", () => {
         })
       );
       expect(mockOnSuccess).toHaveBeenCalled();
+    });
+
+    it("pre-fills exit rows from real executions when provided", () => {
+      render(
+        <TradeForm
+          trade={mockTrade}
+          executions={mockExecutions}
+          defaultAccountId="acc-1"
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      expect(screen.getByDisplayValue("0.5")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("2024-01-15")).toHaveLength(3);
+      expect(screen.getByDisplayValue("10:00")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("10:15")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("60")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("40")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("158")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("163")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("0.25")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("0.75")).toBeInTheDocument();
     });
   });
 

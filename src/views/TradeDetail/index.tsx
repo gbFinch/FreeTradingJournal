@@ -328,6 +328,7 @@ export default function TradeDetail() {
             <div className="p-4">
               <TradeForm
                 trade={trade}
+                executions={executions}
                 defaultAccountId={trade.account_id}
                 onSuccess={() => {
                   setIsEditing(false);

@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { useTradesStore } from '@/stores';
 import Select from '@/components/Select';
-import type { TradeWithDerived, CreateTradeInput, UpdateTradeInput, Direction, Status, AssetClass, ExitExecution } from '@/types';
+import type { TradeWithDerived, CreateTradeInput, UpdateTradeInput, Direction, Status, AssetClass, ExitExecution, Execution } from '@/types';
 import { parseIbkrPaste } from './ibkrParser';
 
 interface ExitRow {
@@ -16,12 +16,49 @@ interface ExitRow {
 
 interface TradeFormProps {
   trade?: TradeWithDerived;
+  executions?: Execution[];
   defaultAccountId: string;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel }: TradeFormProps) {
+function getInitialExits(trade?: TradeWithDerived, executions?: Execution[]): ExitRow[] {
+  const exitExecutions = (executions ?? []).filter((execution) => execution.execution_type === 'exit');
+  if (exitExecutions.length > 0) {
+    return exitExecutions.map((execution) => ({
+      id: crypto.randomUUID(),
+      exit_date: execution.execution_date,
+      exit_time: execution.execution_time ?? '',
+      quantity: execution.quantity.toString(),
+      price: execution.price.toString(),
+      fees: execution.fees.toString(),
+    }));
+  }
+
+  if (trade?.exit_price) {
+    return [{
+      id: crypto.randomUUID(),
+      exit_date: trade.trade_date,
+      exit_time: trade.exit_time ?? '',
+      quantity: trade.quantity?.toString() ?? '',
+      price: trade.exit_price.toString(),
+      fees: '0',
+    }];
+  }
+
+  return [];
+}
+
+function getInitialEntryFees(trade?: TradeWithDerived, executions?: Execution[]): string {
+  const entryExecutions = (executions ?? []).filter((execution) => execution.execution_type === 'entry');
+  if (entryExecutions.length > 0) {
+    const totalEntryFees = entryExecutions.reduce((sum, execution) => sum + execution.fees, 0);
+    return totalEntryFees.toString();
+  }
+  return trade?.fees?.toString() ?? '0';
+}
+
+export default function TradeForm({ trade, executions, defaultAccountId, onSuccess, onCancel }: TradeFormProps) {
   const { createTrade, updateTrade, isLoading } = useTradesStore();
 
   const [symbol, setSymbol] = useState(trade?.symbol ?? '');
@@ -34,27 +71,14 @@ export default function TradeForm({ trade, defaultAccountId, onSuccess, onCancel
   const [entryPrice, setEntryPrice] = useState(trade?.entry_price?.toString() ?? '');
   const [entryTime, setEntryTime] = useState(trade?.entry_time ?? '');
   const [stopLossPrice, setStopLossPrice] = useState(trade?.stop_loss_price?.toString() ?? '');
-  const [entryFees, setEntryFees] = useState(trade?.fees?.toString() ?? '0');
+  const [entryFees, setEntryFees] = useState(() => getInitialEntryFees(trade, executions));
   const [strategy, setStrategy] = useState(trade?.strategy ?? '');
   const [notes, setNotes] = useState(trade?.notes ?? '');
   const [ibkrPaste, setIbkrPaste] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   // Exit executions state
-  const [exits, setExits] = useState<ExitRow[]>(() => {
-    // For editing existing trades, pre-populate with single exit if present
-    if (trade?.exit_price) {
-      return [{
-        id: crypto.randomUUID(),
-        exit_date: trade.trade_date,
-        exit_time: trade.exit_time ?? '',
-        quantity: trade.quantity?.toString() ?? '',
-        price: trade.exit_price.toString(),
-        fees: '0',
-      }];
-    }
-    return [];
-  });
+  const [exits, setExits] = useState<ExitRow[]>(() => getInitialExits(trade, executions));
 
   // Calculate totals from exits
   const exitStats = useMemo(() => {
