@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import TradeDetail from "./index";
 import { useTradesStore } from "@/stores";
 import { getTradeExecutions } from "@/api/import";
+import { getTradeCandles } from "@/api/market";
 import type { Execution, TradeWithDerived } from "@/types";
 
 const mockNavigate = vi.fn();
@@ -15,6 +16,7 @@ vi.mock("react-router-dom", () => ({
 
 vi.mock("@/stores", () => ({
   useTradesStore: vi.fn(),
+  useThemeStore: vi.fn(() => ({ theme: "light" })),
 }));
 
 vi.mock("@/components/TradeForm", () => ({
@@ -28,6 +30,10 @@ vi.mock("@/components/TradeForm", () => ({
 
 vi.mock("@/api/import", () => ({
   getTradeExecutions: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock("@/api/market", () => ({
+  getTradeCandles: vi.fn().mockResolvedValue([]),
 }));
 
 const mockTrade: TradeWithDerived = {
@@ -68,6 +74,7 @@ describe("TradeDetail", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getTradeExecutions).mockResolvedValue([]);
+    vi.mocked(getTradeCandles).mockResolvedValue([]);
   });
 
   describe("loading state", () => {
@@ -179,6 +186,7 @@ describe("TradeDetail", () => {
       expect(screen.getByText("$160.00")).toBeInTheDocument();
       expect(screen.getByText("Quantity")).toBeInTheDocument();
       expect(screen.getByText("100")).toBeInTheDocument();
+      expect(screen.getByText("Trade Chart")).toBeInTheDocument();
     });
 
     it("displays performance section", () => {

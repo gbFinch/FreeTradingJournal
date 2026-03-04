@@ -194,14 +194,6 @@ pub fn calculate_equity_curve_owned(trades: &[TradeWithDerived]) -> Vec<EquityPo
     calculate_equity_curve(&refs)
 }
 
-/// Calculate max drawdown from equity curve
-pub fn calculate_max_drawdown(equity_curve: &[EquityPoint]) -> f64 {
-    equity_curve
-        .iter()
-        .map(|p| p.drawdown)
-        .fold(0.0, f64::max)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

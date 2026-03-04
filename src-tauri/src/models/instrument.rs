@@ -9,15 +9,3 @@ pub struct Instrument {
     pub exchange: Option<String>,
     pub created_at: DateTime<Utc>,
 }
-
-impl Instrument {
-    pub fn new(id: String, symbol: String, exchange: Option<String>) -> Self {
-        Self {
-            id,
-            symbol,
-            asset_class: "stock".to_string(),
-            exchange,
-            created_at: Utc::now(),
-        }
-    }
-}

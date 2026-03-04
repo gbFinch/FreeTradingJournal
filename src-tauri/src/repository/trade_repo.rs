@@ -1,7 +1,9 @@
 use chrono::{NaiveDate, Utc};
 use sqlx::sqlite::SqlitePool;
 use sqlx::Row;
-use crate::models::{Direction, Status, Trade, CreateTradeInput, UpdateTradeInput, AssetClass, TradeExecutionRecord};
+use crate::models::{Direction, Status, Trade, CreateTradeInput, UpdateTradeInput, AssetClass};
+#[cfg(test)]
+use crate::models::trade::TradeExecutionRecord;
 
 pub struct TradeRepository;
 
@@ -210,6 +212,7 @@ impl TradeRepository {
     }
 
     /// Get executions for a trade
+    #[cfg(test)]
     pub async fn get_executions(pool: &SqlitePool, trade_id: &str) -> Result<Vec<TradeExecutionRecord>, sqlx::Error> {
         let rows = sqlx::query(
             r#"

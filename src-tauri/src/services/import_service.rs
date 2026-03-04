@@ -164,10 +164,6 @@ impl PositionTracker {
         }
     }
 
-    fn is_closed(&self) -> bool {
-        self.open_quantity <= 0.0001 && !self.entries.is_empty() && !self.exits.is_empty()
-    }
-
     fn to_aggregated_trade(&self) -> AggregatedTrade {
         let entries: Vec<Execution> = self
             .entries

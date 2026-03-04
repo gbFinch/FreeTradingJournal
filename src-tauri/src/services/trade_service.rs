@@ -1,8 +1,12 @@
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
+use chrono_tz::Tz;
 use sqlx::sqlite::SqlitePool;
 use crate::calculations::calculate_derived_fields;
-use crate::models::{CreateTradeInput, Status, Trade, TradeWithDerived, UpdateTradeInput, TradeExecutionRecord};
+use crate::models::{CreateTradeInput, Status, Trade, TradeWithDerived, UpdateTradeInput};
+#[cfg(test)]
+use crate::models::trade::TradeExecutionRecord;
 use crate::repository::{InstrumentRepository, TradeRepository};
+use crate::services::settings_service::SettingsService;
 
 pub struct TradeService;
 
@@ -13,28 +17,31 @@ impl TradeService {
         user_id: &str,
         input: CreateTradeInput,
     ) -> Result<TradeWithDerived, String> {
+        let manual_timezone = SettingsService::get_manual_trade_timezone(pool).await?;
+        let normalized_input = Self::normalize_manual_times_to_utc(input, &manual_timezone)?;
+
         // Validate input (including exits)
-        Self::validate_input(&input)?;
+        Self::validate_input(&normalized_input)?;
 
         // Validate account exists
         let account_exists: bool = sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM accounts WHERE id = ?)"
         )
-        .bind(&input.account_id)
+        .bind(&normalized_input.account_id)
         .fetch_one(pool)
         .await
         .map_err(|e| format!("Failed to check account: {}", e))?;
 
         if !account_exists {
-            return Err(format!("Account not found: {}", input.account_id));
+            return Err(format!("Account not found: {}", normalized_input.account_id));
         }
 
         // Process exits if provided
         let (aggregated_exit_price, aggregated_exit_time, aggregated_fees, computed_status) =
-            Self::process_exits(&input)?;
+            Self::process_exits(&normalized_input)?;
 
         // Build modified input with aggregated values
-        let mut processed_input = input.clone();
+        let mut processed_input = normalized_input.clone();
         if let Some(exit_price) = aggregated_exit_price {
             processed_input.exit_price = Some(exit_price);
         }
@@ -63,11 +70,11 @@ impl TradeService {
         let trade = TradeRepository::insert(pool, user_id, &instrument.id, &processed_input)
             .await
             .map_err(|e| format!("Failed to create trade (user={}, account={}, instrument={}): {}",
-                user_id, input.account_id, instrument.id, e))?;
+                user_id, normalized_input.account_id, instrument.id, e))?;
 
         // Insert entry execution record for manual trades.
-        let entry_quantity = input.quantity.unwrap_or_else(|| {
-            input.exits.as_ref()
+        let entry_quantity = normalized_input.quantity.unwrap_or_else(|| {
+            normalized_input.exits.as_ref()
                 .map(|exits| exits.iter().map(|e| e.quantity).sum())
                 .unwrap_or(0.0)
         });
@@ -76,18 +83,18 @@ impl TradeService {
                 pool,
                 &trade.id,
                 "entry",
-                input.trade_date,
-                input.entry_time.as_deref(),
+                normalized_input.trade_date,
+                normalized_input.entry_time.as_deref(),
                 entry_quantity,
-                input.entry_price,
-                input.fees.unwrap_or(0.0),
+                normalized_input.entry_price,
+                normalized_input.fees.unwrap_or(0.0),
             )
             .await
             .map_err(|e| format!("Failed to insert entry execution: {}", e))?;
         }
 
         // Insert exit executions if provided
-        if let Some(ref exits) = input.exits {
+        if let Some(ref exits) = normalized_input.exits {
             for (i, exit) in exits.iter().enumerate() {
                 Self::insert_execution(
                     pool,
@@ -106,6 +113,35 @@ impl TradeService {
 
         // Calculate derived fields
         Ok(Self::with_derived_fields(trade))
+    }
+
+    fn normalize_manual_times_to_utc(
+        mut input: CreateTradeInput,
+        manual_timezone: &str,
+    ) -> Result<CreateTradeInput, String> {
+        let timezone = manual_timezone
+            .parse::<Tz>()
+            .map_err(|_| format!("Invalid configured manual timezone: {}", manual_timezone))?;
+
+        if let Some(entry_time) = input.entry_time.clone() {
+            let (utc_date, utc_time) =
+                convert_local_datetime_to_utc(input.trade_date, &entry_time, timezone)?;
+            input.trade_date = utc_date;
+            input.entry_time = Some(utc_time);
+        }
+
+        if let Some(exits) = input.exits.as_mut() {
+            for exit in exits.iter_mut() {
+                if let Some(exit_time) = exit.exit_time.clone() {
+                    let (utc_date, utc_time) =
+                        convert_local_datetime_to_utc(exit.exit_date, &exit_time, timezone)?;
+                    exit.exit_date = utc_date;
+                    exit.exit_time = Some(utc_time);
+                }
+            }
+        }
+
+        Ok(input)
     }
 
     /// Process exits to calculate aggregated values
@@ -285,6 +321,7 @@ impl TradeService {
     }
 
     /// Get executions for a trade
+    #[cfg(test)]
     pub async fn get_trade_executions(
         pool: &SqlitePool,
         trade_id: &str,
@@ -349,6 +386,33 @@ impl TradeService {
 
         Ok(())
     }
+}
+
+fn parse_time_value(value: &str) -> Result<NaiveTime, String> {
+    NaiveTime::parse_from_str(value, "%H:%M:%S")
+        .or_else(|_| NaiveTime::parse_from_str(value, "%H:%M"))
+        .map_err(|_| format!("Invalid time format: {}", value))
+}
+
+fn convert_local_datetime_to_utc(
+    date: NaiveDate,
+    time: &str,
+    timezone: Tz,
+) -> Result<(NaiveDate, String), String> {
+    let local_time = parse_time_value(time)?;
+    let local_naive = NaiveDateTime::new(date, local_time);
+    let zoned = timezone
+        .from_local_datetime(&local_naive)
+        .single()
+        .or_else(|| timezone.from_local_datetime(&local_naive).earliest())
+        .ok_or_else(|| format!("Could not resolve local datetime {} {}", date, time))?;
+
+    let utc = zoned.with_timezone(&Utc);
+    let utc_naive = utc.naive_utc();
+    Ok((
+        utc_naive.date(),
+        utc_naive.time().format("%H:%M:%S").to_string(),
+    ))
 }
 
 #[cfg(test)]

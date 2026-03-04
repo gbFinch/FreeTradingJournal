@@ -60,10 +60,41 @@ async fn run_migrations(pool: &SqlitePool) -> Result<(), sqlx::Error> {
         .fetch_one(pool)
         .await?;
 
+        let has_screenshot_column: bool = sqlx::query_scalar(
+            "SELECT EXISTS(
+                SELECT 1
+                FROM pragma_table_info('trades')
+                WHERE name = 'screenshot_url'
+            )"
+        )
+        .fetch_one(pool)
+        .await?;
+
+        let has_market_candles: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='market_candles')"
+        )
+        .fetch_one(pool)
+        .await?;
+
+        let has_settings_table: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='settings')"
+        )
+        .fetch_one(pool)
+        .await?;
+
         if has_executions {
             // Database was migrated before tracking - mark all as applied
             mark_migration_applied(pool, "001_initial_schema").await?;
             mark_migration_applied(pool, "002_executions_options").await?;
+            if has_screenshot_column {
+                mark_migration_applied(pool, "003_trade_screenshot_url").await?;
+            }
+            if has_market_candles {
+                mark_migration_applied(pool, "004_market_candles").await?;
+            }
+            if has_settings_table {
+                mark_migration_applied(pool, "005_settings").await?;
+            }
         } else {
             // Check if users table exists (from migration 001)
             let has_users: bool = sqlx::query_scalar(
@@ -98,6 +129,20 @@ async fn run_migrations(pool: &SqlitePool) -> Result<(), sqlx::Error> {
         let migration_003 = include_str!("../../migrations/003_trade_screenshot_url.sql");
         sqlx::raw_sql(migration_003).execute(pool).await?;
         mark_migration_applied(pool, "003_trade_screenshot_url").await?;
+    }
+
+    // Migration 004: Market candle cache
+    if !migration_applied(pool, "004_market_candles").await? {
+        let migration_004 = include_str!("../../migrations/004_market_candles.sql");
+        sqlx::raw_sql(migration_004).execute(pool).await?;
+        mark_migration_applied(pool, "004_market_candles").await?;
+    }
+
+    // Migration 005: Application settings
+    if !migration_applied(pool, "005_settings").await? {
+        let migration_005 = include_str!("../../migrations/005_settings.sql");
+        sqlx::raw_sql(migration_005).execute(pool).await?;
+        mark_migration_applied(pool, "005_settings").await?;
     }
 
     Ok(())

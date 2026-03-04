@@ -1,4 +1,4 @@
-use crate::models::{Direction, DerivedFields, Trade, TradeResult, AssetClass};
+use crate::models::{Direction, DerivedFields, Trade, TradeResult};
 
 /// Calculate gross PnL for a trade
 /// Long: (exit_price - entry_price) × quantity × multiplier

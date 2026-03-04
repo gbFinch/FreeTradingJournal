@@ -105,6 +105,7 @@ pub struct ExitExecution {
 }
 
 /// Stored trade execution (from database)
+#[cfg(test)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TradeExecutionRecord {
     pub id: String,

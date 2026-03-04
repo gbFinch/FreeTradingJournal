@@ -7,6 +7,8 @@ import type {
   DailyPerformance,
   PeriodMetrics,
   EquityPoint,
+  Candle,
+  AlpacaKeysStatus,
 } from '@/types';
 import { mockAccounts, mockTrades } from './mockData';
 import { calculateDerivedFields } from './calculations';
@@ -14,6 +16,9 @@ import { calculateDerivedFields } from './calculations';
 // In-memory store (resets on page reload)
 let accounts: Account[] = [...mockAccounts];
 let trades: Trade[] = [...mockTrades];
+let alpacaApiKeyId: string | null = null;
+let alpacaApiSecretKey: string | null = null;
+let manualTradeTimezone = 'Europe/Amsterdam';
 
 // Helper to generate UUID
 function generateId(): string {
@@ -376,6 +381,77 @@ function getEquityCurve(
   return results;
 }
 
+function getTradeCandles(tradeId: string, timeframe: string, candleKind: string): Candle[] {
+  const trade = getTrade(tradeId);
+  if (!trade) return [];
+
+  const stepSecondsByTimeframe: Record<string, number> = {
+    '1m': 60,
+    '5m': 5 * 60,
+    '15m': 15 * 60,
+    '30m': 30 * 60,
+    '1h': 60 * 60,
+    '1d': 24 * 60 * 60,
+  };
+  const stepSeconds = stepSecondsByTimeframe[timeframe] ?? 5 * 60;
+
+  const start = new Date(`${trade.trade_date}T08:00:00Z`).getTime() / 1000;
+  const bars = 140;
+  let lastClose = candleKind === 'underlying' ? trade.entry_price * 35 : trade.entry_price;
+  const candles: Candle[] = [];
+
+  for (let i = 0; i < bars; i++) {
+    const time = Math.floor(start + (i * stepSeconds));
+    const drift = Math.sin(i / 8) * 0.25;
+    const volatility = 0.2 + Math.abs(Math.cos(i / 5)) * 0.35;
+    const open = lastClose;
+    const close = Math.max(0.01, open + drift + ((i % 3) - 1) * 0.07);
+    const high = Math.max(open, close) + volatility;
+    const low = Math.max(0.01, Math.min(open, close) - volatility);
+    candles.push({ time, open, high, low, close, volume: 1000 + i * 17 });
+    lastClose = close;
+  }
+
+  return candles;
+}
+
+function getAlpacaKeysStatus(): AlpacaKeysStatus {
+  const has_key_id = Boolean(alpacaApiKeyId && alpacaApiKeyId.trim().length > 0);
+  const has_secret_key = Boolean(alpacaApiSecretKey && alpacaApiSecretKey.trim().length > 0);
+  const masked_key_id = has_key_id && alpacaApiKeyId
+    ? `${alpacaApiKeyId.slice(0, 4)}••••${alpacaApiKeyId.slice(-4)}`
+    : null;
+  return {
+    has_key_id,
+    has_secret_key,
+    masked_key_id,
+  };
+}
+
+function saveAlpacaKeys(apiKeyId: string, apiSecretKey: string): void {
+  if (!apiKeyId.trim() || !apiSecretKey.trim()) {
+    throw new Error('API Key ID and API Secret Key are required.');
+  }
+  alpacaApiKeyId = apiKeyId.trim();
+  alpacaApiSecretKey = apiSecretKey.trim();
+}
+
+function clearAlpacaKeys(): void {
+  alpacaApiKeyId = null;
+  alpacaApiSecretKey = null;
+}
+
+function getManualTradeTimezone(): string {
+  return manualTradeTimezone;
+}
+
+function saveManualTradeTimezone(timezone: string): void {
+  if (!timezone.trim()) {
+    throw new Error('Manual trade timezone is required.');
+  }
+  manualTradeTimezone = timezone.trim();
+}
+
 // ========== Mock Invoke Handler ==========
 
 type InvokeArgs = Record<string, unknown>;
@@ -438,6 +514,28 @@ export async function mockInvoke<T>(cmd: string, args?: InvokeArgs): Promise<T> 
         args?.endDate as string,
         args?.accountId as string | undefined
       ) as T;
+    case 'get_trade_candles':
+      return getTradeCandles(
+        (args?.tradeId as string | undefined) ?? (args?.trade_id as string),
+        (args?.timeframe as string | undefined) ?? '5m',
+        (args?.candleKind as string | undefined) ?? 'primary'
+      ) as T;
+    case 'get_alpaca_keys_status':
+      return getAlpacaKeysStatus() as T;
+    case 'save_alpaca_keys':
+      saveAlpacaKeys(
+        (args?.apiKeyId as string | undefined) ?? (args?.api_key_id as string),
+        (args?.apiSecretKey as string | undefined) ?? (args?.api_secret_key as string)
+      );
+      return undefined as T;
+    case 'clear_alpaca_keys':
+      clearAlpacaKeys();
+      return undefined as T;
+    case 'get_manual_trade_timezone':
+      return getManualTradeTimezone() as T;
+    case 'save_manual_trade_timezone':
+      saveManualTradeTimezone(args?.timezone as string);
+      return undefined as T;
 
     default:
       throw new Error(`Unknown command: ${cmd}`);

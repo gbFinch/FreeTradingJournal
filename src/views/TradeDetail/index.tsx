@@ -1,12 +1,51 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useTradesStore } from '@/stores';
 import { getTradeExecutions } from '@/api/import';
+import { getTradeCandles } from '@/api/market';
 import TradeForm from '@/components/TradeForm';
+import TradeCandleChart from '@/components/TradeCandleChart';
+import SynchronizedCandleCharts from '@/components/SynchronizedCandleCharts';
 import clsx from 'clsx';
-import type { Execution } from '@/types';
+import type { Candle, CandleTimeframe, Execution } from '@/types';
+
+function timeframeMinutes(timeframe: CandleTimeframe): number {
+  if (timeframe === '1m') return 1;
+  if (timeframe === '5m') return 5;
+  return 15;
+}
+
+function aggregateCandles(candles: Candle[], bucketMinutes: number): Candle[] {
+  if (bucketMinutes <= 1) return candles;
+
+  const bucketSeconds = bucketMinutes * 60;
+  const buckets = new Map<number, Candle>();
+
+  for (const candle of candles) {
+    const bucketStart = candle.time - (candle.time % bucketSeconds);
+    const existing = buckets.get(bucketStart);
+
+    if (existing) {
+      existing.high = Math.max(existing.high, candle.high);
+      existing.low = Math.min(existing.low, candle.low);
+      existing.close = candle.close;
+      existing.volume = (existing.volume ?? 0) + (candle.volume ?? 0);
+    } else {
+      buckets.set(bucketStart, {
+        time: bucketStart,
+        open: candle.open,
+        high: candle.high,
+        low: candle.low,
+        close: candle.close,
+        volume: candle.volume ?? 0,
+      });
+    }
+  }
+
+  return [...buckets.values()].sort((a, b) => a.time - b.time);
+}
 
 function formatCurrency(value: number | null): string {
   if (value === null) return '-';
@@ -31,6 +70,34 @@ function formatNumber(value: number | null, decimals = 2): string {
   if (value === null) return '-';
   if (!isFinite(value)) return 'Infinite';
   return value.toFixed(decimals);
+}
+
+function toExecutionUtcDate(executionDate: string, executionTime?: string | null): Date {
+  const time = executionTime && executionTime.trim().length > 0 ? executionTime : '00:00:00';
+  const safeTime = time.includes(':') ? time : '00:00:00';
+  return new Date(`${executionDate}T${safeTime}Z`);
+}
+
+function formatExecutionDateNY(executionDate: string, executionTime?: string | null): string {
+  const dt = toExecutionUtcDate(executionDate, executionTime);
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(dt);
+}
+
+function formatExecutionTimeNY(executionDate: string, executionTime?: string | null): string {
+  if (!executionTime) return '-';
+  const dt = toExecutionUtcDate(executionDate, executionTime);
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(dt);
 }
 
 function pnlClass(value: number | null | undefined): string {
@@ -100,8 +167,8 @@ function ExecutionTable({ rows, pnlByRow, pnlLabel = 'Scale P&L' }: ExecutionTab
         <tbody>
           {rows.map((exec, i) => (
             <tr key={i} className="border-t border-stone-200/70 text-stone-700 dark:border-stone-700/80 dark:text-stone-200">
-              <td className="px-3 py-2.5">{format(new Date(exec.execution_date), 'MMM d, yyyy')}</td>
-              <td className="px-3 py-2.5">{exec.execution_time || '-'}</td>
+              <td className="px-3 py-2.5">{formatExecutionDateNY(exec.execution_date, exec.execution_time)}</td>
+              <td className="px-3 py-2.5">{formatExecutionTimeNY(exec.execution_date, exec.execution_time)}</td>
               <td className="px-3 py-2.5 text-right font-medium">{exec.quantity}</td>
               <td className="px-3 py-2.5 text-right font-medium">${exec.price.toFixed(2)}</td>
               <td className="px-3 py-2.5 text-right font-medium">${exec.fees.toFixed(2)}</td>
@@ -119,12 +186,18 @@ function ExecutionTable({ rows, pnlByRow, pnlLabel = 'Scale P&L' }: ExecutionTab
 }
 
 export default function TradeDetail() {
+  const timeframes: CandleTimeframe[] = ['1m', '5m', '15m'];
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [executions, setExecutions] = useState<Execution[]>([]);
   const [executionsLoading, setExecutionsLoading] = useState(false);
+  const [baseCandles, setBaseCandles] = useState<Candle[]>([]);
+  const [underlyingBaseCandles, setUnderlyingBaseCandles] = useState<Candle[]>([]);
+  const [candlesLoading, setCandlesLoading] = useState(false);
+  const [candlesError, setCandlesError] = useState<string | null>(null);
+  const [chartTimeframe, setChartTimeframe] = useState<CandleTimeframe>('5m');
   const [selectionResolved, setSelectionResolved] = useState(false);
 
   const { selectedTrade, selectTrade, deleteTrade, fetchTrades, isLoading } = useTradesStore();
@@ -164,6 +237,47 @@ export default function TradeDetail() {
         .finally(() => setExecutionsLoading(false));
     }
   }, [id]);
+
+  const isOptionTrade = selectedTrade?.asset_class === 'option';
+
+  const candles = useMemo(
+    () => aggregateCandles(baseCandles, timeframeMinutes(chartTimeframe)),
+    [baseCandles, chartTimeframe]
+  );
+  const underlyingCandles = useMemo(
+    () => aggregateCandles(underlyingBaseCandles, timeframeMinutes(chartTimeframe)),
+    [underlyingBaseCandles, chartTimeframe]
+  );
+
+  const loadCandles = useCallback((forceRefresh = false) => {
+    if (!id) return;
+    setCandlesLoading(true);
+    setCandlesError(null);
+    const optionRequest = getTradeCandles(id, '1m', forceRefresh, 'primary');
+    const underlyingRequest = isOptionTrade
+      ? getTradeCandles(id, '1m', forceRefresh, 'underlying')
+      : Promise.resolve<Candle[]>([]);
+
+    Promise.all([optionRequest, underlyingRequest])
+      .then(([optionResult, underlyingResult]) => {
+        setBaseCandles(optionResult);
+        setUnderlyingBaseCandles(underlyingResult);
+        if (optionResult.length === 0) {
+          setCandlesError('No candles returned for this trade/timeframe.');
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+        setBaseCandles([]);
+        setUnderlyingBaseCandles([]);
+        setCandlesError(error instanceof Error ? error.message : String(error));
+      })
+      .finally(() => setCandlesLoading(false));
+  }, [id, isOptionTrade]);
+
+  useEffect(() => {
+    loadCandles(false);
+  }, [loadCandles]);
 
   const handleDelete = async () => {
     if (id) {
@@ -422,6 +536,96 @@ export default function TradeDetail() {
             <DetailRow label="R-Multiple" value={formatNumber(trade.r_multiple)} valueClass={pnlClass(trade.r_multiple)} />
           </div>
         </div>
+      </section>
+
+      <section className="app-panel overflow-hidden p-0">
+          <div className="border-b border-stone-200/80 bg-gradient-to-r from-stone-100 via-emerald-50 to-teal-100 px-4 py-4 dark:border-slate-700/80 dark:from-slate-900 dark:via-emerald-950/40 dark:to-slate-900 md:px-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">Trade Chart</h2>
+                <p className="text-xs uppercase tracking-[0.14em] text-stone-600 dark:text-stone-300">
+                  Candles with Entry and Exit Markers
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-1 rounded-full border border-stone-300/80 bg-white/85 p-1 backdrop-blur dark:border-slate-600/80 dark:bg-slate-900/70">
+                {timeframes.map((timeframe) => (
+                  <button
+                    key={timeframe}
+                    type="button"
+                    onClick={() => setChartTimeframe(timeframe)}
+                    className={clsx(
+                      'rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-colors',
+                      chartTimeframe === timeframe
+                        ? 'bg-slate-900 text-white dark:bg-emerald-400 dark:text-slate-950'
+                        : 'text-stone-700 hover:bg-stone-100 dark:text-slate-200 dark:hover:bg-slate-800'
+                    )}
+                  >
+                    {timeframe}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-wide">
+                <span className="rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-1 text-emerald-700 dark:text-emerald-300">
+                  Long/Buy Marker
+                </span>
+                <span className="rounded-full border border-rose-500/40 bg-rose-500/15 px-2 py-1 text-rose-700 dark:text-rose-300">
+                  Sell/Exit Marker
+                </span>
+                <span className="rounded-full border border-stone-300/70 bg-white/80 px-2 py-1 text-stone-600 dark:border-slate-600 dark:bg-slate-900/70 dark:text-slate-300">
+                  New York Time
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => loadCandles(true)}
+                disabled={candlesLoading}
+                className={clsx(
+                  'rounded-lg border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors',
+                  candlesLoading
+                    ? 'cursor-not-allowed border-stone-300 bg-stone-100 text-stone-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500'
+                    : 'border-blue-600 bg-blue-600 text-white hover:bg-blue-500 dark:border-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400'
+                )}
+              >
+                {candlesLoading ? 'Updating...' : 'Update Candles'}
+              </button>
+            </div>
+          </div>
+
+          <div className="px-4 py-4 md:px-5">
+            <div className="relative">
+              {trade.asset_class === 'option' ? (
+                <SynchronizedCandleCharts
+                  optionCandles={candles}
+                  underlyingCandles={underlyingCandles}
+                  executions={executions}
+                  direction={trade.direction}
+                  entryPrice={trade.entry_price}
+                  stopLossPrice={trade.stop_loss_price}
+                />
+              ) : (
+                <TradeCandleChart
+                  candles={candles}
+                  executions={executions}
+                  direction={trade.direction}
+                  entryPrice={trade.entry_price}
+                  stopLossPrice={trade.stop_loss_price}
+                />
+              )}
+              {candlesLoading && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/70 backdrop-blur-[1px] dark:bg-slate-950/60">
+                  <p className="rounded-md border border-stone-300 bg-white/95 px-3 py-1.5 text-sm font-medium text-stone-600 shadow-sm dark:border-slate-600 dark:bg-slate-900/95 dark:text-slate-300">
+                    Loading candles...
+                  </p>
+                </div>
+              )}
+            </div>
+            {candlesError && (
+              <p className="mt-3 text-sm text-rose-600 dark:text-rose-400">{candlesError}</p>
+            )}
+          </div>
       </section>
 
       {showExecutionsSection && (

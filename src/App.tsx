@@ -6,6 +6,7 @@ import CalendarView from '@/views/CalendarView';
 import TradeList from '@/views/TradeList';
 import TradeDetail from '@/views/TradeDetail';
 import Metrics from '@/views/Metrics';
+import SettingsView from '@/views/Settings';
 import TradeForm from '@/components/TradeForm';
 
 function ThemeToggle() {
@@ -158,6 +159,25 @@ function Sidebar({ onAddTrade }: SidebarProps) {
               <span className={textClass}>Trades</span>
             </NavLink>
           </li>
+          <li>
+            <NavLink
+              to="/settings"
+              title="Settings"
+              className={({ isActive }) =>
+                `flex items-center gap-2 p-2 w-full rounded-lg ${
+                  isActive
+                    ? 'bg-teal-700 text-white'
+                    : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
+                }`
+              }
+            >
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317a1 1 0 011.35-.936l1.923.64a1 1 0 001.022-.242l1.248-1.53a1 1 0 011.57 0l1.413 1.732a1 1 0 01-.086 1.346l-1.451 1.29a1 1 0 00-.316 1.01l.445 1.924a1 1 0 01-.677 1.16l-1.87.623a1 1 0 00-.668.738l-.287 1.95a1 1 0 01-1.116.845l-1.96-.284a1 1 0 00-.934.303l-1.42 1.422a1 1 0 01-1.414 0l-1.422-1.422a1 1 0 00-.933-.303l-1.96.284a1 1 0 01-1.117-.845l-.287-1.95a1 1 0 00-.667-.738l-1.87-.623a1 1 0 01-.678-1.16l.445-1.924a1 1 0 00-.315-1.01L2.06 6.73a1 1 0 01-.087-1.346l1.414-1.732a1 1 0 011.57 0l1.247 1.53a1 1 0 001.022.242l1.923-.64a1 1 0 011.176.533z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12a3 3 0 106 0 3 3 0 00-6 0z" />
+              </svg>
+              <span className={textClass}>Settings</span>
+            </NavLink>
+          </li>
         </ul>
       </nav>
 
@@ -193,6 +213,7 @@ function App() {
             <Route path="/metrics" element={<Metrics />} />
             <Route path="/trades" element={<TradeList />} />
             <Route path="/trades/:id" element={<TradeDetail />} />
+            <Route path="/settings" element={<SettingsView />} />
           </Routes>
         </main>
 

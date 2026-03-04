@@ -68,6 +68,14 @@ pub fn run() {
             commands::preview_tlg_import,
             commands::execute_tlg_import,
             commands::get_trade_executions,
+            // Market data commands
+            commands::get_trade_candles,
+            // Settings commands
+            commands::get_alpaca_keys_status,
+            commands::save_alpaca_keys,
+            commands::clear_alpaca_keys,
+            commands::get_manual_trade_timezone,
+            commands::save_manual_trade_timezone,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

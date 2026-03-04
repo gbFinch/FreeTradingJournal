@@ -26,11 +26,13 @@ impl TlgAction {
         matches!(self, TlgAction::BuyToOpen | TlgAction::SellToOpen)
     }
 
+    #[cfg(test)]
     /// Returns true if this action closes a position
     pub fn is_closing(&self) -> bool {
         matches!(self, TlgAction::SellToClose | TlgAction::BuyToClose)
     }
 
+    #[cfg(test)]
     /// Returns true if this is a buy action (long entry or short exit)
     pub fn is_buy(&self) -> bool {
         matches!(self, TlgAction::BuyToOpen | TlgAction::BuyToClose)

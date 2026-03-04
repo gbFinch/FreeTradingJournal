@@ -31,6 +31,10 @@ vi.mock("@/views/TradeDetail", () => ({
   default: () => <div data-testid="tradedetail-view">TradeDetail View</div>,
 }));
 
+vi.mock("@/views/Settings", () => ({
+  default: () => <div data-testid="settings-view">Settings View</div>,
+}));
+
 vi.mock("@/components/TradeForm", () => ({
   default: () => <div data-testid="trade-form">Trade Form</div>,
 }));
@@ -117,6 +121,12 @@ describe("App", () => {
       expect(screen.getByRole("link", { name: "Metrics" })).toBeInTheDocument();
     });
 
+    it("renders Settings nav link", () => {
+      renderWithRouter();
+
+      expect(screen.getByRole("link", { name: "Settings" })).toBeInTheDocument();
+    });
+
     it("Dashboard link points to /", () => {
       renderWithRouter();
 
@@ -143,6 +153,13 @@ describe("App", () => {
 
       const link = screen.getByRole("link", { name: "Metrics" });
       expect(link).toHaveAttribute("href", "/metrics");
+    });
+
+    it("Settings link points to /settings", () => {
+      renderWithRouter();
+
+      const link = screen.getByRole("link", { name: "Settings" });
+      expect(link).toHaveAttribute("href", "/settings");
     });
   });
 
@@ -175,6 +192,14 @@ describe("App", () => {
       fireEvent.click(screen.getByRole("link", { name: "Metrics" }));
 
       expect(screen.getByTestId("metrics-view")).toBeInTheDocument();
+    });
+
+    it("renders Settings view when navigating to /settings", () => {
+      renderWithRouter();
+
+      fireEvent.click(screen.getByRole("link", { name: "Settings" }));
+
+      expect(screen.getByTestId("settings-view")).toBeInTheDocument();
     });
   });
 
@@ -243,15 +268,15 @@ describe("App", () => {
 
       // Navigate to Calendar
       fireEvent.click(screen.getByRole("link", { name: "Calendar" }));
-      expect(screen.getByRole("link", { name: "Calendar" })).toHaveClass("bg-blue-600");
+      expect(screen.getByRole("link", { name: "Calendar" })).toHaveClass("bg-teal-700");
 
       // Navigate to Trades
       fireEvent.click(screen.getByRole("link", { name: "Trades" }));
-      expect(screen.getByRole("link", { name: "Trades" })).toHaveClass("bg-blue-600");
+      expect(screen.getByRole("link", { name: "Trades" })).toHaveClass("bg-teal-700");
 
       // Navigate back to Dashboard
       fireEvent.click(screen.getByRole("link", { name: "Dashboard" }));
-      expect(screen.getByRole("link", { name: "Dashboard" })).toHaveClass("bg-blue-600");
+      expect(screen.getByRole("link", { name: "Dashboard" })).toHaveClass("bg-teal-700");
     });
 
     it("inactive links have default styling", () => {
@@ -259,10 +284,10 @@ describe("App", () => {
 
       fireEvent.click(screen.getByRole("link", { name: "Calendar" }));
 
-      // Dashboard, Metrics, and Trades should have inactive styling (text-gray-600 for light mode)
-      expect(screen.getByRole("link", { name: "Dashboard" })).toHaveClass("text-gray-600");
-      expect(screen.getByRole("link", { name: "Metrics" })).toHaveClass("text-gray-600");
-      expect(screen.getByRole("link", { name: "Trades" })).toHaveClass("text-gray-600");
+      // Dashboard, Metrics, and Trades should have inactive styling
+      expect(screen.getByRole("link", { name: "Dashboard" })).toHaveClass("text-stone-600");
+      expect(screen.getByRole("link", { name: "Metrics" })).toHaveClass("text-stone-600");
+      expect(screen.getByRole("link", { name: "Trades" })).toHaveClass("text-stone-600");
     });
   });
 });
