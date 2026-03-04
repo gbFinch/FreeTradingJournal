@@ -373,6 +373,7 @@ mod tests {
             fees: Some(10.0),
             strategy: Some("momentum".to_string()),
             notes: None,
+            screenshot_url: None,
             status: Some(Status::Closed),
             exits: None,
         }
@@ -518,6 +519,7 @@ mod tests {
             fees: None,
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: None,
             exits: None,
         };
@@ -591,6 +593,7 @@ mod integration_tests {
             fees: Some(0.0),
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: Some(Status::Closed),
             exits: None,
         };
@@ -631,6 +634,7 @@ mod integration_tests {
             fees: Some(0.0),
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: Some(Status::Closed),
             exits: None,
         };
@@ -688,6 +692,7 @@ mod integration_tests {
             fees: Some(0.0),
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: Some(Status::Closed),
             exits: None,
         };
@@ -725,6 +730,7 @@ mod integration_tests {
             fees: Some(8.0),
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: Some(Status::Closed),
             exits: None,
         };
@@ -852,6 +858,7 @@ mod integration_tests {
             fees: None,
             strategy: None,
             notes: Some("Updated notes".to_string()),
+            screenshot_url: None,
             status: None,
         };
 
@@ -892,6 +899,7 @@ mod integration_tests {
             fees: None,
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: None,
         };
 
@@ -1000,6 +1008,7 @@ mod integration_tests {
             fees: Some(5.0), // Entry fees
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: None,
             exits: Some(vec![ExitExecution {
                 id: None,
@@ -1058,6 +1067,7 @@ mod integration_tests {
             fees: Some(0.0),
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: None,
             exits: Some(vec![
                 ExitExecution {
@@ -1112,6 +1122,7 @@ mod integration_tests {
             fees: None,
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: None,
             exits: Some(vec![ExitExecution {
                 id: None,
@@ -1153,6 +1164,7 @@ mod integration_tests {
             fees: None,
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: None,
             exits: Some(vec![ExitExecution {
                 id: None,
@@ -1190,6 +1202,7 @@ mod integration_tests {
             fees: None,
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: None,
             exits: Some(vec![ExitExecution {
                 id: None,
@@ -1227,6 +1240,7 @@ mod integration_tests {
             fees: None,
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: None,
             exits: Some(vec![ExitExecution {
                 id: None,
@@ -1264,6 +1278,7 @@ mod integration_tests {
             fees: Some(5.0), // Entry fees
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: None,
             exits: Some(vec![
                 ExitExecution {

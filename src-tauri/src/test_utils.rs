@@ -26,6 +26,12 @@ pub async fn create_test_db() -> SqlitePool {
         .await
         .expect("Failed to run migration 002");
 
+    let migration_003 = include_str!("../migrations/003_trade_screenshot_url.sql");
+    sqlx::raw_sql(migration_003)
+        .execute(&pool)
+        .await
+        .expect("Failed to run migration 003");
+
     pool
 }
 
@@ -71,6 +77,7 @@ pub fn create_test_trade_input(account_id: &str, symbol: &str) -> CreateTradeInp
         fees: Some(10.0),
         strategy: Some("momentum".to_string()),
         notes: Some("Test trade".to_string()),
+        screenshot_url: None,
         status: Some(Status::Closed),
         exits: None,
     }
@@ -101,6 +108,7 @@ pub fn create_losing_long_trade(
         fees: Some(0.0),
         strategy: None,
         notes: None,
+        screenshot_url: None,
         status: Some(Status::Closed),
         exits: None,
     }
@@ -130,6 +138,7 @@ pub fn create_open_trade(
         fees: None,
         strategy: None,
         notes: None,
+        screenshot_url: None,
         status: Some(Status::Open),
         exits: None,
     }

@@ -73,6 +73,7 @@ export default function TradeForm({ trade, executions, defaultAccountId, onSucce
   const [stopLossPrice, setStopLossPrice] = useState(trade?.stop_loss_price?.toString() ?? '');
   const [entryFees, setEntryFees] = useState(() => getInitialEntryFees(trade, executions));
   const [strategy, setStrategy] = useState(trade?.strategy ?? '');
+  const [screenshotUrl, setScreenshotUrl] = useState(trade?.screenshot_url ?? '');
   const [notes, setNotes] = useState(trade?.notes ?? '');
   const [ibkrPaste, setIbkrPaste] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -166,6 +167,7 @@ export default function TradeForm({ trade, executions, defaultAccountId, onSucce
           fees: parseFloat(entryFees) + exitStats.totalFees || undefined,
           strategy: strategy || undefined,
           notes: notes || undefined,
+          screenshot_url: screenshotUrl || undefined,
           status: computedStatus,
         };
         await updateTrade(trade.id, input);
@@ -194,6 +196,7 @@ export default function TradeForm({ trade, executions, defaultAccountId, onSucce
           fees: parseFloat(entryFees) || undefined,
           strategy: strategy || undefined,
           notes: notes || undefined,
+          screenshot_url: screenshotUrl || undefined,
           exits: exitExecutions,
         };
         await createTrade(input);
@@ -391,6 +394,19 @@ export default function TradeForm({ trade, executions, defaultAccountId, onSucce
             onChange={(e) => setStrategy(e.target.value)}
             className={inputClass}
             placeholder="Breakout"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Screenshot URL
+          </label>
+          <input
+            type="url"
+            value={screenshotUrl}
+            onChange={(e) => setScreenshotUrl(e.target.value)}
+            className={inputClass}
+            placeholder="https://..."
           />
         </div>
 

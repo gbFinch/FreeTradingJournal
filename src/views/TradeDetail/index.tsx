@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { useTradesStore } from '@/stores';
 import { getTradeExecutions } from '@/api/import';
 import TradeForm from '@/components/TradeForm';
@@ -46,7 +47,7 @@ function resultClass(result: string | null | undefined): string {
 
 interface DetailRowProps {
   label: string;
-  value: string;
+  value: ReactNode;
   valueClass?: string;
 }
 
@@ -198,6 +199,7 @@ export default function TradeDetail() {
   }
 
   const trade = selectedTrade;
+  const screenshotUrl = trade.screenshot_url;
 
   const entries = executions.filter(e => e.execution_type === 'entry');
   const exits = executions.filter(e => e.execution_type === 'exit');
@@ -381,6 +383,22 @@ export default function TradeDetail() {
             <DetailRow label="Stop Loss" value={trade.stop_loss_price ? `$${trade.stop_loss_price.toFixed(2)}` : '-'} />
             <DetailRow label="Fees" value={formatCurrency(trade.fees)} />
             <DetailRow label="Strategy" value={trade.strategy ?? '-'} />
+            <DetailRow
+              label="Screenshot URL"
+              value={
+                screenshotUrl
+                  ? (
+                    <button
+                      type="button"
+                      onClick={() => void openUrl(screenshotUrl)}
+                      className="text-sm font-semibold text-blue-600 underline underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                      {screenshotUrl}
+                    </button>
+                  )
+                  : '-'
+              }
+            />
             <DetailRow label="Status" value={trade.status.toUpperCase()} />
           </div>
         </div>

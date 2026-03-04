@@ -24,8 +24,8 @@ impl TradeRepository {
                 id, user_id, account_id, instrument_id, trade_number,
                 trade_date, direction, quantity, entry_price, exit_price,
                 stop_loss_price, entry_time, exit_time, fees, strategy,
-                notes, status, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                notes, screenshot_url, status, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             "#
         )
         .bind(&id)
@@ -44,6 +44,7 @@ impl TradeRepository {
         .bind(fees)
         .bind(&input.strategy)
         .bind(&input.notes)
+        .bind(&input.screenshot_url)
         .bind(status.as_str())
         .bind(now)
         .bind(now)
@@ -148,6 +149,7 @@ impl TradeRepository {
         let fees = input.fees.unwrap_or(existing.fees);
         let strategy = input.strategy.clone().or(existing.strategy);
         let notes = input.notes.clone().or(existing.notes);
+        let screenshot_url = input.screenshot_url.clone().or(existing.screenshot_url);
         let status = input.status.unwrap_or(existing.status);
         let final_instrument_id = instrument_id.unwrap_or(&existing.instrument_id);
 
@@ -168,6 +170,7 @@ impl TradeRepository {
                 fees = ?,
                 strategy = ?,
                 notes = ?,
+                screenshot_url = ?,
                 status = ?,
                 updated_at = ?
             WHERE id = ?
@@ -187,6 +190,7 @@ impl TradeRepository {
         .bind(fees)
         .bind(&strategy)
         .bind(&notes)
+        .bind(&screenshot_url)
         .bind(status.as_str())
         .bind(now)
         .bind(id)
@@ -255,6 +259,7 @@ impl TradeRepository {
             fees: row.get::<f64, _>("fees"),
             strategy: row.get("strategy"),
             notes: row.get("notes"),
+            screenshot_url: row.get("screenshot_url"),
             status: Status::from_str(row.get::<&str, _>("status")).unwrap_or(Status::Closed),
             created_at: row.get("created_at"),
             updated_at: row.get("updated_at"),
@@ -321,6 +326,7 @@ mod tests {
             fees: None,
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: None, // Should default to Closed
             exits: None,
         };
@@ -568,6 +574,7 @@ mod tests {
             fees: Some(15.0), // Changed
             strategy: Some("swing".to_string()), // Changed
             notes: None,
+            screenshot_url: None,
             status: None,
         };
 
@@ -616,6 +623,7 @@ mod tests {
             fees: None,
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: None,
         };
 
@@ -746,6 +754,7 @@ mod tests {
             fees: Some(5.0),
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: Some(Status::Closed),
             exits: None,
         };

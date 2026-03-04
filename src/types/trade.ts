@@ -31,6 +31,7 @@ export interface Trade {
   fees: number;
   strategy: string | null;
   notes: string | null;
+  screenshot_url?: string | null;
   status: Status;
   created_at: string;
   updated_at: string;
@@ -61,6 +62,7 @@ export interface CreateTradeInput {
   fees?: number;
   strategy?: string;
   notes?: string;
+  screenshot_url?: string;
   status?: Status;
   exits?: ExitExecution[];
 }
@@ -80,5 +82,6 @@ export interface UpdateTradeInput {
   fees?: number;
   strategy?: string;
   notes?: string;
+  screenshot_url?: string;
   status?: Status;
 }

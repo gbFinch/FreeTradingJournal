@@ -32,6 +32,7 @@ mod tests {
             fees: Some(0.0),
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: Some(Status::Closed),
             exits: None,
         }
@@ -55,6 +56,7 @@ mod tests {
             fees: Some(0.0),
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: Some(Status::Closed),
             exits: None,
         }

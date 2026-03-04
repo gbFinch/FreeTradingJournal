@@ -228,6 +228,7 @@ mod tests {
             fees: 0.0,
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: Status::Closed,
             created_at: Utc::now(),
             updated_at: Utc::now(),

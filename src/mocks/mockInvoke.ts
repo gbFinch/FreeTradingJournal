@@ -102,6 +102,7 @@ function createTrade(input: CreateTradeInput): TradeWithDerived {
     fees: input.fees ?? 0,
     strategy: input.strategy ?? null,
     notes: input.notes ?? null,
+    screenshot_url: input.screenshot_url ?? null,
     status: input.status ?? 'open',
     created_at: now(),
     updated_at: now(),
@@ -134,6 +135,7 @@ function updateTrade(id: string, input: UpdateTradeInput): TradeWithDerived {
     fees: input.fees ?? existing.fees,
     strategy: input.strategy ?? existing.strategy,
     notes: input.notes ?? existing.notes,
+    screenshot_url: input.screenshot_url ?? existing.screenshot_url,
     status: input.status ?? existing.status,
     updated_at: now(),
   };

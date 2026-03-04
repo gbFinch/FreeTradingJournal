@@ -170,6 +170,7 @@ mod tests {
             fees: Some(10.0),
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: Some(Status::Closed),
             exits: None,
         };
@@ -226,6 +227,7 @@ mod tests {
             fees: None,
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: Some(Status::Closed),
             exits: None,
         };
@@ -256,6 +258,7 @@ mod tests {
             fees: Some(-5.0), // Invalid
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: Some(Status::Closed),
             exits: None,
         };
@@ -286,6 +289,7 @@ mod tests {
             fees: None,
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: Some(Status::Closed),
             exits: None,
         };
@@ -335,6 +339,7 @@ mod tests {
             fees: None,
             strategy: Some("swing".to_string()),
             notes: None,
+            screenshot_url: None,
             status: None,
         };
 
@@ -367,6 +372,7 @@ mod tests {
             fees: None,
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: None,
         };
 
@@ -402,6 +408,7 @@ mod tests {
             fees: None,
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: None,
         };
 
@@ -434,6 +441,7 @@ mod tests {
             fees: None,
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: None,
         };
 
@@ -466,6 +474,7 @@ mod tests {
             fees: Some(10.0),
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: Some(Status::Closed),
             exits: None,
         };
@@ -489,6 +498,7 @@ mod tests {
             fees: None,
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: None,
         };
 
@@ -602,6 +612,7 @@ mod tests {
             fees: None,
             strategy: Some("updated strategy".to_string()),
             notes: None,
+            screenshot_url: None,
             status: None,
         };
         let updated = TradeService::update_trade(&pool, &created.trade.id, update)

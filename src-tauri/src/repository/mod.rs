@@ -64,19 +64,18 @@ async fn run_migrations(pool: &SqlitePool) -> Result<(), sqlx::Error> {
             // Database was migrated before tracking - mark all as applied
             mark_migration_applied(pool, "001_initial_schema").await?;
             mark_migration_applied(pool, "002_executions_options").await?;
-            return Ok(());
-        }
+        } else {
+            // Check if users table exists (from migration 001)
+            let has_users: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='users')"
+            )
+            .fetch_one(pool)
+            .await?;
 
-        // Check if users table exists (from migration 001)
-        let has_users: bool = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='users')"
-        )
-        .fetch_one(pool)
-        .await?;
-
-        if has_users {
-            // Only migration 001 was applied
-            mark_migration_applied(pool, "001_initial_schema").await?;
+            if has_users {
+                // Only migration 001 was applied
+                mark_migration_applied(pool, "001_initial_schema").await?;
+            }
         }
     }
 
@@ -92,6 +91,13 @@ async fn run_migrations(pool: &SqlitePool) -> Result<(), sqlx::Error> {
         let migration_002 = include_str!("../../migrations/002_executions_options.sql");
         sqlx::raw_sql(migration_002).execute(pool).await?;
         mark_migration_applied(pool, "002_executions_options").await?;
+    }
+
+    // Migration 003: Screenshot URL on trades
+    if !migration_applied(pool, "003_trade_screenshot_url").await? {
+        let migration_003 = include_str!("../../migrations/003_trade_screenshot_url.sql");
+        sqlx::raw_sql(migration_003).execute(pool).await?;
+        mark_migration_applied(pool, "003_trade_screenshot_url").await?;
     }
 
     Ok(())

@@ -138,6 +138,7 @@ pub struct Trade {
     pub fees: f64,
     pub strategy: Option<String>,
     pub notes: Option<String>,
+    pub screenshot_url: Option<String>,
     pub status: Status,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -199,6 +200,7 @@ pub struct CreateTradeInput {
     pub fees: Option<f64>,
     pub strategy: Option<String>,
     pub notes: Option<String>,
+    pub screenshot_url: Option<String>,
     pub status: Option<Status>,
     pub exits: Option<Vec<ExitExecution>>,
 }
@@ -220,5 +222,6 @@ pub struct UpdateTradeInput {
     pub fees: Option<f64>,
     pub strategy: Option<String>,
     pub notes: Option<String>,
+    pub screenshot_url: Option<String>,
     pub status: Option<Status>,
 }

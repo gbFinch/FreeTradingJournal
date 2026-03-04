@@ -145,6 +145,7 @@ mod tests {
             fees: Some(fees),
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: Some(Status::Closed),
             exits: None,
         }
@@ -664,6 +665,7 @@ mod tests {
             fees: None,
             strategy: None,
             notes: None,
+            screenshot_url: None,
             status: Some(Status::Open),
             exits: None,
         };
