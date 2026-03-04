@@ -247,12 +247,17 @@ async fn get_trade_market_context(
     let estimated_1m_bars = ((end_anchor - start_anchor).max(0) / 60) + 1;
 
     let window_buffer_seconds = 6 * 60 * 60;
+    let delayed_now_ts = Utc::now().timestamp() - (20 * 60);
+    let start_ts = start_anchor - window_buffer_seconds;
+    let end_ts = (end_anchor + window_buffer_seconds)
+        .min(delayed_now_ts)
+        .max(start_ts);
 
     Ok(TradeMarketContext {
         symbol: market_symbol,
         market_kind,
-        start_ts: start_anchor - window_buffer_seconds,
-        end_ts: end_anchor + window_buffer_seconds,
+        start_ts,
+        end_ts,
         estimated_1m_bars,
     })
 }
