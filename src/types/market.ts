@@ -9,3 +9,10 @@ export interface Candle {
   close: number;
   volume: number | null;
 }
+
+export interface MarketTapeQuote {
+  symbol: string;
+  price: number;
+  change: number;
+  change_percent: number;
+}

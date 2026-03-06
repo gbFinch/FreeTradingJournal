@@ -70,6 +70,7 @@ pub fn run() {
             commands::get_trade_executions,
             // Market data commands
             commands::get_trade_candles,
+            commands::get_market_tape,
             // Settings commands
             commands::get_alpaca_keys_status,
             commands::save_alpaca_keys,

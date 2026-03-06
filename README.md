@@ -18,6 +18,7 @@ Built with **Tauri + React + TypeScript + Rust + SQLite**.
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
 - [Getting Started](#getting-started)
+- [Alpaca API Keys](#alpaca-api-keys)
 - [Commands](#commands)
 - [IBKR TLG Import](#ibkr-tlg-import)
 - [Data and Privacy](#data-and-privacy)
@@ -76,7 +77,7 @@ This is an independent open-source project and is not affiliated with, endorsed 
 ## Screenshots
 
 ### Dashboard
-<img src="docs/screenshots/dashboard.png" alt="Dashboard screenshot" width="1000" />
+<img src="docs/screenshots/dashboard.png" alt="Dashboard screenshot" width="650" />
 
 ### Dashboard (All Time)
 <img src="docs/screenshots/dashboard_alltime.png" alt="Dashboard all-time screenshot" width="1000" />
@@ -85,10 +86,10 @@ This is an independent open-source project and is not affiliated with, endorsed 
 <img src="docs/screenshots/trades.png" alt="Trades screenshot" width="1000" />
 
 ### Trade Details
-<img src="docs/screenshots/trades_details.png" alt="Trade details screenshot" width="1000" />
+<img src="docs/screenshots/trades_details.png" alt="Trade details screenshot" width="650" />
 
 ### New Trade
-<img src="docs/screenshots/new-trade.png" alt="New trade screenshot" width="1000" />
+<img src="docs/screenshots/new-trade.png" alt="New trade screenshot" width="650" />
 
 ### Import Preview (IBKR TLG)
 <img src="docs/screenshots/import-preview.png" alt="Import preview screenshot" width="1000" />
@@ -156,6 +157,35 @@ npm run dev
 npm run tauri dev
 ```
 
+## Alpaca API Keys
+
+Trading Journal uses Alpaca for market data. It is needed for features that fetch candles and live quote snapshots, including chart data around trades and the market tape.
+
+Alpaca is not used here for order execution or account management. Your trade journal remains local-first, and the app stores the Alpaca API Key ID and Secret Key in the local app database through **Settings**.
+
+### Why Alpaca Is Needed
+
+- Fetches historical market candles used in trade charting
+- Fetches live snapshot data used by the market tape
+- Lets the app enrich locally stored trades with market context without requiring a custom data feed
+
+### How to Get Alpaca Keys
+
+1. Create or sign in to your Alpaca account.
+2. Open the Alpaca dashboard.
+3. Switch to the environment you want to use, usually **Paper Trading** for testing.
+4. Generate or view your API keys in the dashboard's API/developer area.
+5. Copy the **API Key ID** and **Secret Key** and save them immediately. Alpaca only shows the full secret at creation time; if you lose it, you need to regenerate the key pair.
+6. In Trading Journal, open **Settings** and paste the keys into **Alpaca API Key ID** and **Alpaca API Secret Key**.
+
+Notes:
+
+- Paper and live environments use different credentials.
+- If you regenerate keys in Alpaca, you must update them in Trading Journal.
+- Alpaca docs for authentication and paper trading:
+  - https://docs.alpaca.markets/docs/api-references/trading-api/
+  - https://docs.alpaca.markets/docs/trading/paper-trading/
+
 ## Commands
 
 ```bash
@@ -205,7 +235,7 @@ cd src-tauri && cargo test
 
 - Import currently targets Interactive Brokers `.tlg` format
 - Mobile app is not included
-- No direct broker API integrations yet
+- No order execution or account sync integrations yet
 - No cloud backup/sync yet
 
 ## Testing

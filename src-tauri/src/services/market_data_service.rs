@@ -23,6 +23,14 @@ pub struct Candle {
     pub volume: Option<f64>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MarketTapeQuote {
+    pub symbol: String,
+    pub price: f64,
+    pub change: f64,
+    pub change_percent: f64,
+}
+
 #[derive(Debug, Clone, Copy)]
 enum MarketKind {
     Stock,
@@ -58,6 +66,28 @@ struct TradeMarketContext {
 struct AlpacaStockBarsResponse {
     bars: Vec<AlpacaBar>,
     next_page_token: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AlpacaSnapshot {
+    #[serde(rename = "latestTrade")]
+    latest_trade: Option<AlpacaSnapshotTrade>,
+    #[serde(rename = "dailyBar")]
+    daily_bar: Option<AlpacaSnapshotBar>,
+    #[serde(rename = "prevDailyBar")]
+    prev_daily_bar: Option<AlpacaSnapshotBar>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AlpacaSnapshotTrade {
+    #[serde(rename = "p")]
+    price: f64,
+}
+
+#[derive(Debug, Deserialize)]
+struct AlpacaSnapshotBar {
+    #[serde(rename = "c")]
+    close: f64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -101,8 +131,14 @@ impl MarketDataService {
             ));
         }
 
-        let mut one_minute =
-            get_cached_candles(pool, &context.symbol, "1m", context.start_ts, context.end_ts).await?;
+        let mut one_minute = get_cached_candles(
+            pool,
+            &context.symbol,
+            "1m",
+            context.start_ts,
+            context.end_ts,
+        )
+        .await?;
 
         let cache_missing_window = one_minute.is_empty()
             || one_minute
@@ -117,11 +153,24 @@ impl MarketDataService {
         if cache_missing_window || force_refresh {
             let fetched = fetch_alpaca_1m_candles(pool, &context).await?;
             if !fetched.is_empty() {
-                cache_candles(pool, &context.symbol, "1m", "alpaca", &fetched, Utc::now().timestamp())
-                    .await?;
+                cache_candles(
+                    pool,
+                    &context.symbol,
+                    "1m",
+                    "alpaca",
+                    &fetched,
+                    Utc::now().timestamp(),
+                )
+                .await?;
             }
-            one_minute =
-                get_cached_candles(pool, &context.symbol, "1m", context.start_ts, context.end_ts).await?;
+            one_minute = get_cached_candles(
+                pool,
+                &context.symbol,
+                "1m",
+                context.start_ts,
+                context.end_ts,
+            )
+            .await?;
         }
 
         if one_minute.is_empty() {
@@ -142,6 +191,29 @@ impl MarketDataService {
         }
 
         Ok(aggregate_candles(&one_minute, bucket_minutes))
+    }
+
+    pub async fn get_market_tape(
+        pool: &SqlitePool,
+        symbols: Option<&[String]>,
+    ) -> Result<Vec<MarketTapeQuote>, String> {
+        let default_symbols = vec![
+            "SPY".to_string(),
+            "QQQ".to_string(),
+            "AAPL".to_string(),
+            "NVDA".to_string(),
+            "MSFT".to_string(),
+            "TSLA".to_string(),
+            "AMD".to_string(),
+            "META".to_string(),
+        ];
+        let requested = symbols.unwrap_or(&default_symbols);
+        let normalized = normalize_tape_symbols(requested);
+        if normalized.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        fetch_alpaca_market_tape(pool, &normalized).await
     }
 }
 
@@ -195,7 +267,12 @@ async fn get_trade_market_context(
                     .filter(|v| !v.trim().is_empty())
                     .map(sanitize_market_symbol)
                     .or_else(|| extract_underlying_symbol_from_option(&symbol))
-                    .ok_or_else(|| format!("Unable to determine underlying symbol for option {}", symbol))?;
+                    .ok_or_else(|| {
+                        format!(
+                            "Unable to determine underlying symbol for option {}",
+                            symbol
+                        )
+                    })?;
                 (MarketKind::Stock, underlying)
             }
         }
@@ -243,7 +320,10 @@ async fn get_trade_market_context(
     let trade_date: NaiveDate = trade_row.get("trade_date");
     let fallback_ts = parse_date_time(trade_date, Some("09:30:00"))?;
     let start_anchor = execution_times.first().copied().unwrap_or(fallback_ts);
-    let end_anchor = execution_times.last().copied().unwrap_or(start_anchor + (2 * 60 * 60));
+    let end_anchor = execution_times
+        .last()
+        .copied()
+        .unwrap_or(start_anchor + (2 * 60 * 60));
     let estimated_1m_bars = ((end_anchor - start_anchor).max(0) / 60) + 1;
 
     let window_buffer_seconds = 6 * 60 * 60;
@@ -287,6 +367,14 @@ fn parse_trade_time(raw: &str) -> Option<NaiveTime> {
 
 fn sanitize_market_symbol(symbol: &str) -> String {
     symbol.replace(' ', "")
+}
+
+fn normalize_tape_symbols(symbols: &[String]) -> Vec<String> {
+    symbols
+        .iter()
+        .map(|symbol| sanitize_market_symbol(symbol).to_uppercase())
+        .filter(|symbol| !symbol.is_empty())
+        .collect()
 }
 
 fn extract_underlying_symbol_from_option(symbol: &str) -> Option<String> {
@@ -339,7 +427,9 @@ fn extract_underlying_symbol_from_option(symbol: &str) -> Option<String> {
 }
 
 fn normalize_option_symbol(symbol: &str) -> String {
-    let cleaned = sanitize_market_symbol(symbol).replace('’', "'").to_uppercase();
+    let cleaned = sanitize_market_symbol(symbol)
+        .replace('’', "'")
+        .to_uppercase();
     if is_occ_option_symbol(&cleaned) {
         return cleaned;
     }
@@ -388,24 +478,25 @@ fn convert_ibkr_like_to_occ(symbol: &str) -> Option<String> {
         ("DEC", "12"),
     ];
 
-    let (root, remainder) = (1..=5)
-        .find_map(|candidate_root_len| {
-            if candidate_root_len >= symbol.len() {
-                return None;
-            }
-            let root_candidate = &symbol[0..candidate_root_len];
-            if !root_candidate.chars().all(|c| c.is_ascii_alphabetic()) {
-                return None;
-            }
-            let rem = &symbol[candidate_root_len..];
-            if months.iter().any(|(abbr, _)| rem.starts_with(abbr)) {
-                Some((root_candidate, rem))
-            } else {
-                None
-            }
-        })?;
+    let (root, remainder) = (1..=5).find_map(|candidate_root_len| {
+        if candidate_root_len >= symbol.len() {
+            return None;
+        }
+        let root_candidate = &symbol[0..candidate_root_len];
+        if !root_candidate.chars().all(|c| c.is_ascii_alphabetic()) {
+            return None;
+        }
+        let rem = &symbol[candidate_root_len..];
+        if months.iter().any(|(abbr, _)| rem.starts_with(abbr)) {
+            Some((root_candidate, rem))
+        } else {
+            None
+        }
+    })?;
 
-    let month_entry = months.iter().find(|(abbr, _)| remainder.starts_with(abbr))?;
+    let month_entry = months
+        .iter()
+        .find(|(abbr, _)| remainder.starts_with(abbr))?;
     let month_abbr = month_entry.0;
     let month_num = month_entry.1;
 
@@ -504,7 +595,10 @@ fn to_iso_timestamp(ts: i64) -> Result<String, String> {
         .ok_or_else(|| format!("Invalid timestamp: {}", ts))
 }
 
-async fn fetch_alpaca_1m_candles(pool: &SqlitePool, context: &TradeMarketContext) -> Result<Vec<Candle>, String> {
+async fn fetch_alpaca_1m_candles(
+    pool: &SqlitePool,
+    context: &TradeMarketContext,
+) -> Result<Vec<Candle>, String> {
     let (api_key_id, api_secret_key) = get_alpaca_keys(pool).await?;
     let start_iso = to_iso_timestamp(context.start_ts)?;
     let end_iso = to_iso_timestamp(context.end_ts)?;
@@ -556,6 +650,68 @@ async fn fetch_alpaca_1m_candles(pool: &SqlitePool, context: &TradeMarketContext
     Ok(normalize_bars_to_candles(all))
 }
 
+async fn fetch_alpaca_market_tape(
+    pool: &SqlitePool,
+    symbols: &[String],
+) -> Result<Vec<MarketTapeQuote>, String> {
+    let (api_key_id, api_secret_key) = get_alpaca_keys(pool).await?;
+    let client = Client::builder()
+        .user_agent("TradingJournal/0.1")
+        .build()
+        .map_err(|e| format!("HTTP client error: {}", e))?;
+
+    let endpoint = format!("{}/v2/stocks/snapshots", ALPACA_DATA_BASE_URL);
+    let response = client
+        .get(&endpoint)
+        .header("APCA-API-KEY-ID", api_key_id)
+        .header("APCA-API-SECRET-KEY", api_secret_key)
+        .query(&[("symbols", symbols.join(",")), ("feed", "iex".to_string())])
+        .send()
+        .await
+        .map_err(|e| format!("Alpaca market tape request failed: {}", e))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!(
+            "Alpaca market tape request failed: HTTP {} {}",
+            status, body
+        ));
+    }
+
+    let payload: HashMap<String, AlpacaSnapshot> = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse Alpaca market tape response: {}", e))?;
+
+    Ok(symbols
+        .iter()
+        .filter_map(|symbol| {
+            let snapshot = payload.get(symbol)?;
+            let previous_close = snapshot.prev_daily_bar.as_ref()?.close;
+            let price = snapshot
+                .latest_trade
+                .as_ref()
+                .map(|trade| trade.price)
+                .or_else(|| snapshot.daily_bar.as_ref().map(|bar| bar.close))
+                .unwrap_or(previous_close);
+            let change = price - previous_close;
+            let change_percent = if previous_close.abs() > f64::EPSILON {
+                (change / previous_close) * 100.0
+            } else {
+                0.0
+            };
+
+            Some(MarketTapeQuote {
+                symbol: symbol.clone(),
+                price,
+                change,
+                change_percent,
+            })
+        })
+        .collect())
+}
+
 async fn fetch_alpaca_stock_page(
     client: &Client,
     api_key_id: &str,
@@ -592,7 +748,10 @@ async fn fetch_alpaca_stock_page(
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
-        return Err(format!("Alpaca stock request failed: HTTP {} {}", status, body));
+        return Err(format!(
+            "Alpaca stock request failed: HTTP {} {}",
+            status, body
+        ));
     }
 
     let payload: AlpacaStockBarsResponse = response
@@ -638,7 +797,10 @@ async fn fetch_alpaca_option_page(
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
-        return Err(format!("Alpaca option request failed: HTTP {} {}", status, body));
+        return Err(format!(
+            "Alpaca option request failed: HTTP {} {}",
+            status, body
+        ));
     }
 
     let payload: AlpacaOptionsBarsResponse = response
@@ -696,7 +858,8 @@ fn aggregate_candles(candles: &[Candle], bucket_minutes: i64) -> Vec<Candle> {
                 existing.high = existing.high.max(candle.high);
                 existing.low = existing.low.min(candle.low);
                 existing.close = candle.close;
-                existing.volume = Some(existing.volume.unwrap_or(0.0) + candle.volume.unwrap_or(0.0));
+                existing.volume =
+                    Some(existing.volume.unwrap_or(0.0) + candle.volume.unwrap_or(0.0));
             }
             None => {
                 buckets.insert(

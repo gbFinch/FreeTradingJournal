@@ -32,12 +32,11 @@ export default function PeriodSelector() {
   };
 
   return (
-    <div className="flex items-center gap-4">
-      {/* Month Navigator */}
+    <div className="dashboard-period-selector flex flex-col gap-3 rounded-2xl border border-stone-200/80 bg-white/72 p-3 shadow-sm backdrop-blur-sm dark:border-stone-700/80 dark:bg-stone-900/72 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-1">
         <button
           onClick={handlePrevMonth}
-          className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
+          className="rounded-xl p-2 text-stone-600 transition-colors hover:bg-stone-200 dark:text-stone-300 dark:hover:bg-stone-700"
           aria-label="Previous month"
         >
           <svg
@@ -57,20 +56,20 @@ export default function PeriodSelector() {
         <button
           onClick={() => handlePeriodChange('month')}
           className={clsx(
-            'px-3 py-1.5 text-sm font-medium rounded-md transition-colors min-w-[120px]',
+            'min-w-[130px] rounded-xl px-4 py-2 text-sm font-medium transition-colors',
             periodType === 'month'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              ? 'bg-white text-stone-950 shadow-sm dark:bg-stone-100 dark:text-stone-950'
+              : 'text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200'
           )}
         >
           {format(selectedMonth, 'MMM yyyy')}
           {isCurrentMonth && periodType === 'month' && (
-            <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">(current)</span>
+            <span className="ml-1.5 text-xs text-stone-300 dark:text-stone-600">(current)</span>
           )}
         </button>
         <button
           onClick={handleNextMonth}
-          className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
+          className="rounded-xl p-2 text-stone-600 transition-colors hover:bg-stone-200 dark:text-stone-300 dark:hover:bg-stone-700"
           aria-label="Next month"
         >
           <svg
@@ -89,18 +88,16 @@ export default function PeriodSelector() {
         </button>
       </div>
 
-      {/* Divider */}
-      <div className="h-6 w-px bg-gray-300 dark:bg-gray-600" />
+      <div className="hidden h-6 w-px bg-stone-300 dark:bg-stone-600 sm:block" />
 
-      {/* Other Period Options */}
-      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+      <div className="flex gap-1 rounded-xl bg-stone-100 p-1 dark:bg-stone-800">
         <button
           onClick={() => handlePeriodChange('ytd')}
           className={clsx(
-            'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+            'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
             periodType === 'ytd'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              ? 'bg-white text-stone-900 shadow-sm dark:bg-stone-700 dark:text-stone-100'
+              : 'text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200'
           )}
         >
           YTD
@@ -108,10 +105,10 @@ export default function PeriodSelector() {
         <button
           onClick={() => handlePeriodChange('all')}
           className={clsx(
-            'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+            'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
             periodType === 'all'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              ? 'bg-white text-stone-900 shadow-sm dark:bg-stone-700 dark:text-stone-100'
+              : 'text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200'
           )}
         >
           All Time

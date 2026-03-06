@@ -51,18 +51,17 @@ export default function MonthlyPnLGrid({ data, onMonthClick }: MonthlyPnLGridPro
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-[24px] border border-stone-200/80 bg-gradient-to-br from-white/90 via-stone-50/80 to-stone-100/70 p-4 shadow-sm dark:border-stone-700/80 dark:from-stone-900/90 dark:via-stone-900/84 dark:to-slate-950/70">
       <table className="w-full border-collapse">
-        {/* Header row */}
         <thead>
           <tr>
-            <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 pr-2 w-16">Year</th>
+            <th className="w-16 pb-3 pr-2 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Year</th>
             {MONTH_NAMES.map((month) => (
-              <th key={month} className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 px-1 min-w-[60px]">
+              <th key={month} className="min-w-[72px] px-1 pb-3 text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
                 {month}
               </th>
             ))}
-            <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-2 pl-2 min-w-[80px]">Year Total</th>
+            <th className="min-w-[92px] pb-3 pl-2 text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Year Total</th>
           </tr>
         </thead>
 
@@ -78,12 +77,12 @@ export default function MonthlyPnLGrid({ data, onMonthClick }: MonthlyPnLGridPro
 
             return (
               <tr key={year}>
-                {/* Year label */}
-                <td className="text-sm font-semibold text-gray-700 dark:text-gray-300 pr-2 py-1 align-middle">
-                  {year}
+                <td className="align-middle pr-2 py-1">
+                  <div className="rounded-2xl border border-stone-200/80 bg-white/80 px-3 py-3 text-sm font-semibold text-gray-700 dark:border-stone-700/80 dark:bg-stone-800/80 dark:text-gray-300">
+                    {year}
+                  </div>
                 </td>
 
-                {/* Month cells */}
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                   <td key={month} className="px-1 py-1">
                     <MonthCell
@@ -93,11 +92,10 @@ export default function MonthlyPnLGrid({ data, onMonthClick }: MonthlyPnLGridPro
                   </td>
                 ))}
 
-                {/* Year total */}
                 <td className="pl-2 py-1">
                   <div
                     className={clsx(
-                      'h-14 rounded flex flex-col items-center justify-center p-1 border',
+                      'flex h-[74px] flex-col items-center justify-center rounded-2xl border p-2',
                       isYearPositive && 'bg-emerald-200 dark:bg-emerald-800 border-emerald-400 dark:border-emerald-500',
                       isYearNegative && 'bg-red-200 dark:bg-red-800 border-red-400 dark:border-red-500',
                       !isYearPositive && !isYearNegative && 'bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
@@ -118,14 +116,13 @@ export default function MonthlyPnLGrid({ data, onMonthClick }: MonthlyPnLGridPro
           })}
         </tbody>
 
-        {/* Grand total footer */}
         <tfoot>
           <tr>
             <td colSpan={13} className="pt-3">
               <div className="flex justify-end">
                 <div
                   className={clsx(
-                    'px-4 py-2 rounded-lg border',
+                    'rounded-2xl border px-4 py-3',
                     grandTotal > 0 && 'bg-emerald-100 dark:bg-emerald-900/50 border-emerald-300 dark:border-emerald-600',
                     grandTotal < 0 && 'bg-red-100 dark:bg-red-900/50 border-red-300 dark:border-red-600',
                     grandTotal === 0 && 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600'

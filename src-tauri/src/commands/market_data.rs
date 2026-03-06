@@ -1,6 +1,8 @@
 use tauri::State;
 
-use crate::services::market_data_service::{parse_candle_kind, Candle, CandleKind, MarketDataService};
+use crate::services::market_data_service::{
+    parse_candle_kind, Candle, CandleKind, MarketDataService, MarketTapeQuote,
+};
 use crate::AppState;
 
 #[tauri::command]
@@ -25,4 +27,12 @@ pub async fn get_trade_candles(
         candle_kind,
     )
     .await
+}
+
+#[tauri::command]
+pub async fn get_market_tape(
+    state: State<'_, AppState>,
+    symbols: Option<Vec<String>>,
+) -> Result<Vec<MarketTapeQuote>, String> {
+    MarketDataService::get_market_tape(&state.pool, symbols.as_deref()).await
 }

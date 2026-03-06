@@ -9,6 +9,7 @@ import type {
   EquityPoint,
   Candle,
   AlpacaKeysStatus,
+  MarketTapeQuote,
 } from '@/types';
 import { mockAccounts, mockTrades } from './mockData';
 import { calculateDerivedFields } from './calculations';
@@ -415,6 +416,28 @@ function getTradeCandles(tradeId: string, timeframe: string, candleKind: string)
   return candles;
 }
 
+function getMarketTape(symbols?: string[]): MarketTapeQuote[] {
+  const universe = (symbols && symbols.length > 0
+    ? symbols
+    : ['SPY', 'QQQ', 'AAPL', 'NVDA', 'MSFT', 'TSLA', 'AMD', 'META']
+  ).map((symbol) => symbol.toUpperCase());
+
+  return universe.map((symbol, index) => {
+    const basePrice = 95 + index * 37.5;
+    const signedBias = index % 3 === 1 ? -1 : 1;
+    const change = Number((signedBias * (0.42 + index * 0.18)).toFixed(2));
+    const price = Number((basePrice + change).toFixed(2));
+    const previousClose = price - change;
+    const change_percent = Number(((change / previousClose) * 100).toFixed(2));
+    return {
+      symbol,
+      price,
+      change,
+      change_percent,
+    };
+  });
+}
+
 function getAlpacaKeysStatus(): AlpacaKeysStatus {
   const has_key_id = Boolean(alpacaApiKeyId && alpacaApiKeyId.trim().length > 0);
   const has_secret_key = Boolean(alpacaApiSecretKey && alpacaApiSecretKey.trim().length > 0);
@@ -520,6 +543,8 @@ export async function mockInvoke<T>(cmd: string, args?: InvokeArgs): Promise<T> 
         (args?.timeframe as string | undefined) ?? '5m',
         (args?.candleKind as string | undefined) ?? 'primary'
       ) as T;
+    case 'get_market_tape':
+      return getMarketTape(args?.symbols as string[] | undefined) as T;
     case 'get_alpaca_keys_status':
       return getAlpacaKeysStatus() as T;
     case 'save_alpaca_keys':

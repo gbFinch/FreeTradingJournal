@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mockInvoke } from "./mockInvoke";
-import type { CreateTradeInput, TradeWithDerived, Account } from "@/types";
+import type { CreateTradeInput, TradeWithDerived, Account, MarketTapeQuote } from "@/types";
 
 describe("mockInvoke", () => {
   describe("accounts", () => {
@@ -194,6 +194,18 @@ describe("mockInvoke", () => {
         expect(point).toHaveProperty("cumulative_pnl");
         expect(point).toHaveProperty("drawdown");
       });
+    });
+
+    it("get_market_tape returns quote rows", async () => {
+      const tape = await mockInvoke<MarketTapeQuote[]>("get_market_tape", {
+        symbols: ["SPY", "QQQ"],
+      });
+
+      expect(tape).toHaveLength(2);
+      expect(tape[0]).toHaveProperty("symbol");
+      expect(tape[0]).toHaveProperty("price");
+      expect(tape[0]).toHaveProperty("change");
+      expect(tape[0]).toHaveProperty("change_percent");
     });
   });
 

@@ -18,6 +18,10 @@ vi.mock("@/components/PeriodSelector", () => ({
   default: () => <div data-testid="period-selector">PeriodSelector</div>,
 }));
 
+vi.mock("@/components/MarketTape", () => ({
+  default: () => <div data-testid="market-tape">MarketTape</div>,
+}));
+
 vi.mock("@/components/EquityCurve", () => ({
   default: ({ data }: { data: EquityPoint[] }) => (
     <div data-testid="equity-curve" data-points={data.length}>EquityCurve</div>

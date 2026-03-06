@@ -37,10 +37,10 @@ function formatCurrency(value: number): string {
 }
 
 function getDayColorClasses(pnl: number, hasData: boolean): string {
-  if (!hasData) return 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700';
-  if (pnl > 0) return 'bg-emerald-100 dark:bg-emerald-900 border-emerald-300 dark:border-emerald-600';
-  if (pnl < 0) return 'bg-red-100 dark:bg-[#6b1c1c] border-red-300 dark:border-red-700';
-  return 'bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600'; // breakeven
+  if (!hasData) return 'bg-stone-100/80 dark:bg-stone-800/70 border-stone-200/80 dark:border-stone-700/80';
+  if (pnl > 0) return 'bg-emerald-100 dark:bg-emerald-900 border-emerald-300 dark:border-emerald-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]';
+  if (pnl < 0) return 'bg-red-100 dark:bg-[#6b1c1c] border-red-300 dark:border-red-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]';
+  return 'bg-stone-200 dark:bg-gray-700 border-stone-300 dark:border-gray-600'; // breakeven
 }
 
 function chunkIntoWeeks(days: DayCell[]): DayCell[][] {
@@ -152,36 +152,40 @@ export default function CalendarHeatmap({ data, onDayClick }: CalendarHeatmapPro
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {monthsData.map(month => (
-        <div key={month.key} className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
-          {/* Month header with stats */}
-          <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{month.label}</h3>
+        <section
+          key={month.key}
+          className="rounded-[24px] border border-stone-200/80 bg-gradient-to-br from-white/90 via-stone-50/90 to-stone-100/70 p-4 shadow-sm dark:border-stone-700/80 dark:from-stone-900/90 dark:via-stone-900/84 dark:to-slate-950/70"
+        >
+          <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400">Month review</p>
+              <h3 className="mt-1 text-base font-semibold text-stone-800 dark:text-stone-200 truncate">{month.label}</h3>
+            </div>
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <span
                 className={clsx(
-                  'px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap',
+                  'rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap',
                   month.monthStats.totalPnl > 0
-                    ? 'bg-green-100 dark:bg-green-600/20 text-green-700 dark:text-green-400'
+                    ? 'border-green-200 bg-green-100 dark:border-green-700 dark:bg-green-600/20 text-green-700 dark:text-green-400'
                     : month.monthStats.totalPnl < 0
-                    ? 'bg-red-100 dark:bg-red-600/20 text-red-700 dark:text-red-400'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                    ? 'border-red-200 bg-red-100 dark:border-red-700 dark:bg-red-600/20 text-red-700 dark:text-red-400'
+                    : 'border-stone-300 bg-gray-200 dark:border-gray-600 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                 )}
               >
                 {formatCurrency(month.monthStats.totalPnl)}
               </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap hidden sm:inline">
+              <span className="hidden whitespace-nowrap rounded-full border border-stone-200/80 bg-white/70 px-3 py-1 text-xs text-gray-500 dark:border-stone-700 dark:bg-stone-800/70 dark:text-gray-400 sm:inline">
                 {month.monthStats.tradingDays} day{month.monthStats.tradingDays !== 1 ? 's' : ''}
               </span>
             </div>
           </div>
 
-          {/* Day headers */}
           <div className="pr-0 sm:pr-24">
-            <div className="grid grid-cols-7 gap-1 mb-1">
+            <div className="mb-2 grid grid-cols-7 gap-1">
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
-                <div key={idx} className="text-xs text-gray-500 dark:text-gray-400 text-center py-1 truncate">
+                <div key={idx} className="truncate py-1 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
                   <span className="hidden sm:inline">{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][idx]}</span>
                   <span className="sm:hidden">{day}</span>
                 </div>
@@ -189,60 +193,62 @@ export default function CalendarHeatmap({ data, onDayClick }: CalendarHeatmapPro
             </div>
           </div>
 
-          {/* Calendar rows with weekly summaries */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             {month.weeks.map((week, weekIndex) => (
               <div key={weekIndex} className="flex gap-2">
-                {/* Week row */}
                 <div className="flex-1 grid grid-cols-7 gap-1">
                   {week.map((day, dayIdx) => (
                     <div
                       key={day.isEmpty ? `empty-${weekIndex}-${dayIdx}` : day.date}
                       className={clsx(
-                        '@container relative h-16 min-w-0 p-1.5 rounded-md transition-all border overflow-hidden',
+                        '@container calendar-day-cell relative h-[80px] min-w-0 overflow-hidden rounded-[16px] border p-2 transition-all',
                         day.isEmpty
                           ? 'bg-transparent border-transparent'
                           : getDayColorClasses(day.pnl, day.tradeCount > 0),
                         !day.isEmpty && 'text-gray-800 dark:text-gray-100',
-                        !day.isEmpty && day.tradeCount > 0 && 'hover:opacity-90 cursor-pointer'
+                        !day.isEmpty && day.tradeCount > 0 && 'calendar-day-cell-active cursor-pointer hover:-translate-y-[1px] hover:shadow-md'
                       )}
                       title={day.isEmpty ? '' : `${day.date}: ${day.pnl >= 0 ? '+' : ''}$${day.pnl.toFixed(2)} (${day.tradeCount} trades)`}
                       onClick={!day.isEmpty && day.tradeCount > 0 && onDayClick ? () => onDayClick(day.date) : undefined}
                     >
-                      {/* Date number - top right, hidden when very small */}
                       {!day.isEmpty && (
                         <span className={clsx(
-                          'absolute top-1 right-1.5 text-xs hidden @min-[50px]:block',
-                          day.tradeCount === 0 && 'text-gray-400 dark:text-gray-500'
+                          'absolute right-2 top-1.5 hidden text-[11px] font-medium @min-[50px]:block',
+                          day.tradeCount === 0 && 'text-gray-400 dark:text-gray-500',
+                          day.tradeCount > 0 && 'text-stone-500 dark:text-white/70'
                         )}>
                           {parseISO(day.date).getDate()}
                         </span>
                       )}
 
-                      {/* Trade data - centered, hidden when too small */}
                       {!day.isEmpty && day.tradeCount > 0 && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pt-1 hidden @min-[45px]:flex">
-                          <span className="text-sm font-bold truncate max-w-full px-0.5">{formatCurrency(day.pnl)}</span>
-                          <span className="text-[10px] text-gray-600 dark:text-white/90 hidden @min-[65px]:block">
-                            {day.tradeCount} trade{day.tradeCount !== 1 ? 's' : ''}
+                        <div className="absolute inset-0 hidden flex-col justify-center px-2 pb-2 pt-4 @min-[45px]:flex">
+                          <span className="max-w-full truncate px-0.5 text-center text-[17px] font-bold tracking-tight">
+                            {formatCurrency(day.pnl)}
                           </span>
-                          {day.winRate !== null && (
-                            <span className="text-[10px] text-gray-500 dark:text-white/80 hidden @min-[65px]:block">{day.winRate.toFixed(0)}%</span>
-                          )}
+                          <div className="mt-2 flex items-center justify-center gap-1.5">
+                            <span className="hidden text-[10px] text-gray-600 dark:text-white/90 @min-[65px]:block">
+                              {day.tradeCount} trade{day.tradeCount !== 1 ? 's' : ''}
+                            </span>
+                            {day.winRate !== null && (
+                              <span className="hidden rounded-full bg-white/60 px-1.5 py-0.5 text-[10px] font-semibold text-stone-700 dark:bg-black/20 dark:text-white/80 @min-[65px]:block">
+                                {day.winRate.toFixed(0)}%
+                              </span>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
                   ))}
                 </div>
 
-                {/* Weekly summary - hidden on small screens */}
                 <div className="w-20 flex-shrink-0 hidden sm:block">
                   <WeekSummaryCell summary={month.weeklySummaries[weekIndex]} />
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       ))}
     </div>
   );
@@ -252,16 +258,16 @@ function WeekSummaryCell({ summary }: { summary: WeeklySummary }) {
   return (
     <div
       className={clsx(
-        '@container h-16 bg-gray-100 dark:bg-gray-800 rounded-md p-1.5 flex flex-col justify-center border border-gray-200 dark:border-gray-700 overflow-hidden',
+        '@container flex h-[80px] flex-col justify-center overflow-hidden rounded-[16px] border border-stone-200/80 bg-white/80 p-2 dark:border-stone-700/80 dark:bg-stone-800/80',
         summary.tradingDays === 0 && 'opacity-50'
       )}
     >
-      <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 truncate hidden @min-[50px]:block">Week {summary.weekNumber}</div>
+      <div className="mb-0.5 hidden truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400 @min-[50px]:block">Week {summary.weekNumber}</div>
       {summary.tradingDays > 0 ? (
         <>
           <div
             className={clsx(
-              'font-semibold text-xs truncate hidden @min-[40px]:block',
+              'hidden truncate text-xs font-semibold tracking-tight @min-[40px]:block',
               summary.totalPnl > 0
                 ? 'text-green-600 dark:text-green-400'
                 : summary.totalPnl < 0
@@ -271,12 +277,12 @@ function WeekSummaryCell({ summary }: { summary: WeeklySummary }) {
           >
             {formatCurrency(summary.totalPnl)}
           </div>
-          <div className="text-[10px] text-gray-400 dark:text-gray-500 truncate hidden @min-[60px]:block">
+          <div className="hidden truncate text-[10px] text-gray-400 dark:text-gray-500 @min-[60px]:block">
             {summary.tradingDays} day{summary.tradingDays !== 1 ? 's' : ''}
           </div>
         </>
       ) : (
-        <div className="text-[10px] text-gray-400 dark:text-gray-600 truncate hidden @min-[50px]:block">No trades</div>
+        <div className="hidden truncate text-[10px] text-gray-400 dark:text-gray-600 @min-[50px]:block">No trades</div>
       )}
     </div>
   );
